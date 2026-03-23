@@ -1,0 +1,2 @@
+# Missing required fields: providers, channels, database_path
+max_context_tokens = 4096

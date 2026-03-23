@@ -1,0 +1,12 @@
+database_path = "test.db"
+max_context_tokens = 4096
+skill_token_budget = 1024
+rate_limit = 60
+
+[[providers]]
+name = "openai"
+api_key = "sk-test-key-12345"
+model = "gpt-4o-mini"
+
+[[channels]]
+type = "cli"
