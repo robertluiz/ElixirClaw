@@ -1,0 +1,17 @@
+mix ecto.drop && mix ecto.create && mix ecto.migrate
+
+The database for ElixirClaw.Repo has been dropped
+The database for ElixirClaw.Repo has been created
+
+20:29:04.242 [info] == Running 20260323120000 ElixirClaw.Repo.Migrations.CreateSessions.change/0 forward
+20:29:04.247 [info] create table sessions
+20:29:04.248 [info] == Migrated 20260323120000 in 0.0s
+20:29:04.268 [info] == Running 20260323120100 ElixirClaw.Repo.Migrations.CreateMessages.up/0 forward
+20:29:04.268 [info] execute "CREATE TABLE messages (... role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')) ... FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE ...)"
+20:29:04.268 [info] create index messages_session_id_index
+20:29:04.283 [info] == Migrated 20260323120100 in 0.0s
+
+mix test test/elixir_claw/schema_test.exs
+
+Finished in 0.2 seconds
+7 tests, 0 failures

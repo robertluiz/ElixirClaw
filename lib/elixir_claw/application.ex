@@ -8,6 +8,7 @@ defmodule ElixirClaw.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      ElixirClaw.Repo,
       # Starts a worker by calling: ElixirClaw.Worker.start_link(arg)
       # {ElixirClaw.Worker, arg}
     ]

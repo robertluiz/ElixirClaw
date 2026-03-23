@@ -1,0 +1,17 @@
+mix test test/elixir_claw/schema_test.exs
+
+Verified tests:
+- test "create session with valid attrs"
+- test "create message linked to session"
+- test "query messages by session_id"
+- test "token counts tracked on session"
+- test "deleting session cascades to messages"
+
+Representative passing persistence output:
+- INSERT INTO "sessions" ... "token_count_in","token_count_out" ... [0, 0, ...]
+- UPDATE "sessions" SET "token_count_in" = 150, "token_count_out" = 275 ...
+- SELECT ... FROM "sessions" ... token_count_in == 150, token_count_out == 275
+
+Result:
+Finished in 0.2 seconds
+7 tests, 0 failures
