@@ -1,0 +1,28 @@
+Task 22 — MCP Tool Wrapper
+
+Implemented:
+- lib/elixir_claw/mcp/tool_wrapper.ex
+- test/elixir_claw/mcp/tool_wrapper_test.exs
+- ToolRegistry support for wrapper structs plus unregister/2
+- Mox mocks for MCP HTTP/stdio client injection
+
+TDD evidence:
+1) Red
+   mix test test/elixir_claw/mcp/tool_wrapper_test.exs
+   -> CompileError: ElixirClaw.MCP.ToolWrapper.__struct__/1 is undefined
+
+2) Green
+   mix test test/elixir_claw/mcp/tool_wrapper_test.exs
+   -> 9 tests, 0 failures
+
+3) Full suite
+   mix test
+   -> blocked by pre-existing Discord channel failures unrelated to MCP wrapper work
+   -> examples observed:
+      - ElixirClaw.Channels.Discord.start_link/1 is undefined
+      - ElixirClaw.Channels.Discord.handle_incoming/1 is undefined
+      - ElixirClaw.MockDiscordAPI / MockDiscordSessionManager modules unavailable
+
+Diagnostics:
+- lsp_diagnostics unavailable in this environment because elixir-ls is not installed
+- compilation and targeted tests used as verification fallback

@@ -125,7 +125,16 @@
 - Skill trigger matching can stay safe by lowercasing the incoming message, treating plain-string triggers as substring checks, and mapping regex flags manually for `:re` instead of converting user-controlled strings into atoms.
 - Budget-aware skill composition is easiest when it resolves dependency bundles first, includes dependencies before dependents in the composed content, and skips the whole bundle when the remaining budget cannot accommodate all required skills.
 
+## Task 24 Learnings
+- A Telegram channel GenServer can stay testable by wrapping `Telegex.send_message/2` behind a small behaviour and swapping in a Mox mock through channel config instead of touching the real network.
+- Channel processes that create sessions in tests need shared or allowed SQL sandbox access; setting the test connection to `{:shared, self()}` keeps `Session.Manager.start_session/1` usable from inside the channel GenServer.
+
 ## Task 21 Learnings
 - Port-based MCP tests stay hermetic if the client injects `:port_open_fn`, `:send_fn`, and `:port_close_fn`; then raw `{port, {:data, {:eol, line}}}` and `{port, {:exit_status, status}}` tuples can be simulated without launching a real child process.
 - Resolving trusted commands before `GenServer.start_link/3` keeps `start_link/1` failures clean (`{:error, :command_not_found}`) while still allowing Windows-safe `{:spawn_executable, path}` usage and optional `cmd.exe /c` wrapping for `.cmd`/`.bat` scripts.
 - Tracking pending JSON-RPC calls as `id => {from, timer_ref, request_type}` makes timeout cleanup, response correlation, and bulk failure on port exit straightforward without mixing protocol parsing into the public API layer.
+
+## Task 22 Learnings
+- MCP tool registration fits the existing registry cleanly if the registry stores either classic tool modules or `%ElixirClaw.MCP.ToolWrapper{}` structs and dispatches metadata/execution through small helper functions instead of forcing dynamic module generation.
+- For Mox-based MCP wrapper tests, injecting the HTTP/stdio client modules through application env keeps the wrapper production-safe while letting supervised `ToolRegistry.execute/4` tasks hit global Mox expectations without changing the public wrapper API.
+- `register_mcp_tools/4` should normalize both tagged (`{:ok, tools}`) and plain-list `list_tools/1` client results, because the current MCP clients and inherited task notes disagree on return shape.

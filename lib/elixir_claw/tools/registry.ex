@@ -3,21 +3,30 @@ defmodule ElixirClaw.Tools.Registry do
 
   use GenServer
 
+  alias ElixirClaw.MCP.ToolWrapper
+
   @default_max_output_bytes 65_536
   @default_timeout_ms 30_000
   @truncation_marker "[OUTPUT TRUNCATED at 64KB]"
 
-  @type state :: %{tools: %{optional(String.t()) => module()}}
+  @type tool_entry :: module() | ToolWrapper.t()
+  @type state :: %{tools: %{optional(String.t()) => tool_entry()}}
 
   def start_link(opts \\ []) do
     name = Keyword.get(opts, :name, __MODULE__)
     GenServer.start_link(__MODULE__, :ok, name: name)
   end
 
-  def register(tool_module), do: register(__MODULE__, tool_module)
+  def register(tool), do: register(__MODULE__, tool)
 
-  def register(server, tool_module) when is_atom(server) and is_atom(tool_module) do
-    GenServer.call(server, {:register, tool_module})
+  def register(server, tool) when is_atom(server) and (is_atom(tool) or is_struct(tool, ToolWrapper)) do
+    GenServer.call(server, {:register, tool})
+  end
+
+  def unregister(name), do: unregister(__MODULE__, name)
+
+  def unregister(server, name) when is_atom(server) and is_binary(name) do
+    GenServer.call(server, {:unregister, name})
   end
 
   def list, do: list(__MODULE__)
@@ -36,14 +45,14 @@ defmodule ElixirClaw.Tools.Registry do
 
   def execute(name, params, context, server)
       when is_binary(name) and is_map(params) and is_map(context) and is_atom(server) do
-    with {:ok, tool_module} <- get(name, server),
-         :ok <- validate_params(tool_module, params) do
-      timeout_ms = timeout_ms(tool_module)
-      max_output_bytes = max_output_bytes(tool_module)
+    with {:ok, tool} <- get(name, server),
+         :ok <- validate_params(tool, params) do
+      timeout_ms = timeout_ms(tool)
+      max_output_bytes = max_output_bytes(tool)
 
       task =
         Task.Supervisor.async_nolink(ElixirClaw.ToolSupervisor, fn ->
-          apply(tool_module, :execute, [params, context])
+          execute_tool(tool, params, context)
         end)
 
       case Task.yield(task, timeout_ms) || Task.shutdown(task, :brutal_kill) do
@@ -74,13 +83,13 @@ defmodule ElixirClaw.Tools.Registry do
     server
     |> list()
     |> Enum.map(&get(&1, server))
-    |> Enum.map(fn {:ok, tool_module} ->
+    |> Enum.map(fn {:ok, tool} ->
       %{
         type: "function",
         function: %{
-          name: apply(tool_module, :name, []),
-          description: apply(tool_module, :description, []),
-          parameters: apply(tool_module, :parameters_schema, [])
+          name: tool_name(tool),
+          description: tool_description(tool),
+          parameters: parameters_schema(tool)
         }
       }
     end)
@@ -92,9 +101,12 @@ defmodule ElixirClaw.Tools.Registry do
   end
 
   @impl true
-  def handle_call({:register, tool_module}, _from, state) do
-    tool_name = apply(tool_module, :name, [])
-    {:reply, :ok, put_in(state, [:tools, tool_name], tool_module)}
+  def handle_call({:register, tool}, _from, state) do
+    {:reply, :ok, put_in(state, [:tools, tool_name(tool)], tool)}
+  end
+
+  def handle_call({:unregister, name}, _from, state) do
+    {:reply, :ok, update_in(state, [:tools], &Map.delete(&1, name))}
   end
 
   def handle_call(:list, _from, state) do
@@ -104,15 +116,15 @@ defmodule ElixirClaw.Tools.Registry do
 
   def handle_call({:get, name}, _from, state) do
     case Map.fetch(state.tools, name) do
-      {:ok, tool_module} -> {:reply, {:ok, tool_module}, state}
+      {:ok, tool} -> {:reply, {:ok, tool}, state}
       :error -> {:reply, {:error, :not_found}, state}
     end
   end
 
-  defp validate_params(tool_module, params) do
+  defp validate_params(tool, params) do
     required_keys =
-      tool_module
-      |> apply(:parameters_schema, [])
+      tool
+      |> parameters_schema()
       |> Map.get("required", [])
 
     if Enum.all?(required_keys, &Map.has_key?(params, &1)) do
@@ -122,6 +134,8 @@ defmodule ElixirClaw.Tools.Registry do
     end
   end
 
+  defp timeout_ms(%ToolWrapper{} = tool), do: ToolWrapper.timeout_ms(tool)
+
   defp timeout_ms(tool_module) do
     if function_exported?(tool_module, :timeout_ms, 0) do
       apply(tool_module, :timeout_ms, [])
@@ -130,6 +144,8 @@ defmodule ElixirClaw.Tools.Registry do
     end
   end
 
+  defp max_output_bytes(%ToolWrapper{} = tool), do: ToolWrapper.max_output_bytes(tool)
+
   defp max_output_bytes(tool_module) do
     if function_exported?(tool_module, :max_output_bytes, 0) do
       apply(tool_module, :max_output_bytes, [])
@@ -137,6 +153,18 @@ defmodule ElixirClaw.Tools.Registry do
       @default_max_output_bytes
     end
   end
+
+  defp tool_name(%ToolWrapper{} = tool), do: ToolWrapper.name(tool)
+  defp tool_name(tool_module), do: apply(tool_module, :name, [])
+
+  defp tool_description(%ToolWrapper{} = tool), do: ToolWrapper.description(tool)
+  defp tool_description(tool_module), do: apply(tool_module, :description, [])
+
+  defp parameters_schema(%ToolWrapper{} = tool), do: ToolWrapper.parameters_schema(tool)
+  defp parameters_schema(tool_module), do: apply(tool_module, :parameters_schema, [])
+
+  defp execute_tool(%ToolWrapper{} = tool, params, context), do: ToolWrapper.execute(tool, params, context)
+  defp execute_tool(tool_module, params, context), do: apply(tool_module, :execute, [params, context])
 
   defp truncate_output(output, max_output_bytes) when byte_size(output) > max_output_bytes do
     binary_part(output, 0, max_output_bytes) <> @truncation_marker

@@ -27,7 +27,13 @@ defmodule ElixirClaw.Application do
   end
 
   defp ensure_optional_test_modules_loaded do
-    for module <- [ElixirClaw.MockProvider, ElixirClaw.MockChannel, ElixirClaw.MockTool] do
+    for module <- [
+          ElixirClaw.MockProvider,
+          ElixirClaw.MockChannel,
+          ElixirClaw.MockTool,
+          ElixirClaw.MockHTTPClient,
+          ElixirClaw.MockStdioClient
+        ] do
       _ = Code.ensure_loaded?(module)
     end
 
