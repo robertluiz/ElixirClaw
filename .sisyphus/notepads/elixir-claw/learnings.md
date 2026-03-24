@@ -69,3 +69,9 @@
 - A dedicated `Task.Supervisor` is the clean OTP boundary for tool sandboxing: `Task.Supervisor.async_nolink/2` plus `Task.yield/2 || Task.shutdown/2` gives timeout enforcement without crashing the registry caller.
 - Keeping tool names as strings in registry state avoids unsafe atom conversion while making provider tool specs and lookup keys line up with JSON function-calling payloads.
 - Mox-based tool tests that execute in supervised task processes need global mode (or explicit allowances), otherwise expectations set in the test process are not visible inside sandboxed tool tasks.
+
+## Task 11 Learnings
+- `ElixirClaw.Agent.Loop` works best as a plain synchronous module: `Session.Worker` already owns per-session process state, so the orchestration pipeline can stay functional and side-effectful without introducing another mailbox hop.
+- `Session.Manager.get_session/1` returns session metadata/state but not persisted history updates, so the orchestration layer must hydrate conversation history from `messages` in Ecto before calling `ContextBuilder.build_context/3`.
+- The default orchestration path needs a supervised `ElixirClaw.Tools.Registry`; otherwise `ToolRegistry.to_provider_format/0` and `execute/3` have no default server to talk to outside isolated tests.
+- In this project, `function_exported?/3` on Mox-generated mocks can be flaky unless the mock modules are eagerly loaded; `Code.ensure_loaded?/1` at app startup keeps the existing behaviour tests stable.
