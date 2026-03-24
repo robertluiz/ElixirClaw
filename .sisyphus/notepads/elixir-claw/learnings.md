@@ -115,3 +115,8 @@
 - Conversation consolidation can stay small and testable as a synchronous module when it scopes itself to Ecto reads/writes plus a single provider callback; a transaction is enough to swap old history for one summary message safely.
 - For this repo's SQLite in-memory tests, `setup_all` with shared sandbox ownership plus explicit table creation keeps new Ecto-backed test files deterministic without introducing a separate DataCase helper.
 - Ordering by `inserted_at` alone is not stable for same-timestamp fixture rows; adding `id` as a tiebreaker or sorting assertions avoids flaky message-history tests.
+
+## Task 21 Learnings
+- Port-based MCP tests stay hermetic if the client injects `:port_open_fn`, `:send_fn`, and `:port_close_fn`; then raw `{port, {:data, {:eol, line}}}` and `{port, {:exit_status, status}}` tuples can be simulated without launching a real child process.
+- Resolving trusted commands before `GenServer.start_link/3` keeps `start_link/1` failures clean (`{:error, :command_not_found}`) while still allowing Windows-safe `{:spawn_executable, path}` usage and optional `cmd.exe /c` wrapping for `.cmd`/`.bat` scripts.
+- Tracking pending JSON-RPC calls as `id => {from, timer_ref, request_type}` makes timeout cleanup, response correlation, and bulk failure on port exit straightforward without mixing protocol parsing into the public API layer.

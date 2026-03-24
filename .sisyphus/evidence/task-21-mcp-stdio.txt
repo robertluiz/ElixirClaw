@@ -1,0 +1,30 @@
+Task 21 — MCP stdio transport via Port-based GenServer
+Date: 2026-03-23
+
+Files added:
+- lib/elixir_claw/mcp/stdio_client.ex
+- test/elixir_claw/mcp/stdio_client_test.exs
+
+Verification summary:
+1. `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat` compile --warnings-as-errors
+   - Result: PASS
+
+2. `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat` test test/elixir_claw/mcp/stdio_client_test.exs
+   - Result: PASS
+   - Outcome: 7 tests, 0 failures
+
+3. `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat` test
+   - Result: FAIL (pre-existing unrelated suite failures)
+   - Blocking failures observed:
+     - `ElixirClaw.MCP.HTTPClientTest` fails because `ElixirClaw.MCP.HTTPClient` is undefined
+     - `ElixirClaw.Agent.MemoryTest` has an existing consolidation assertion failure
+   - Note: Task 21 implementation did not introduce stdio-client test regressions; targeted Task 21 suite is green.
+
+Implemented behavior:
+- Port-owning GenServer with secure `{:spawn_executable, path}` startup
+- Configurable `command`, `env`, `cwd`, `timeout_ms`
+- Test-only injection hooks for port open/send/close
+- JSON-RPC request correlation with per-request timers
+- `list_tools/1`, `call_tool/3`, `stop/1`
+- 64KB output truncation marker for tool responses
+- Port exit handling returning `{:error, :process_exited}` to pending callers
