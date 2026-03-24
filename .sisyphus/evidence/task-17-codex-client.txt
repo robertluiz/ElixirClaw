@@ -1,0 +1,22 @@
+Task 17 — Codex Provider: Responses API + SSE Streaming
+
+Created files:
+- lib/elixir_claw/providers/codex/client.ex
+- test/elixir_claw/providers/codex/client_test.exs
+
+TDD evidence:
+- Red: `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/providers/codex/client_test.exs`
+  - Result before implementation: 11 tests, 11 failures (`ElixirClaw.Providers.Codex.Client` undefined)
+- Green: `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/providers/codex/client_test.exs`
+  - Result after implementation: 11 tests, 0 failures
+
+Verification:
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat format lib/elixir_claw/providers/codex/client.ex test/elixir_claw/providers/codex/client_test.exs`
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/providers/codex/client_test.exs`
+  - Result: 11 tests, 0 failures
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test`
+  - Result: 1 doctest, 151 tests, 0 failures
+
+Diagnostics:
+- Attempted `lsp_diagnostics` on both changed Elixir files
+- Result: unavailable in this environment because `elixir-ls` is not installed (`Command not found: elixir-ls`)

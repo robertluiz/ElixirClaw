@@ -101,6 +101,11 @@
 - Treating `base_url` as either a version root or a full chat-completions endpoint avoids hardcoding a single vendor URL while keeping Bypass tests easy to write.
 - Logging only an insecure-HTTP warning for `http://` endpoints satisfies security visibility without leaking API keys or request payloads.
 
+## Task 17 Learnings
+- Codex Responses API needs its own request conversion layer: system messages become `instructions`, provider tool specs must be flattened from OpenAI-style `%{type: "function", function: ...}` into `%{"type" => "function", "name" => ..., "parameters" => ...}`, and conversation history must be reshaped into `input` items.
+- Preserving both Codex `call_id` and output-item `id` inside a normalized tool-call identifier like `call_id|item_id` keeps tool-result roundtrips possible: later `tool` messages can recover the upstream `call_id` without inventing new state.
+- Named SSE parsing fits the Anthropic-style event parser well: accumulate `response.output_item.added/done` function-call state, emit text only from `response.content_part.delta`, and attach final `%TokenUsage{}` from `response.completed`.
+
 ## Task 18 Learnings
 - A simple SKILL.md parser can stay dependency-free by splitting on lines, requiring opening/closing `---` delimiters, and only supporting the frontmatter shapes the project actually needs.
 - Keeping frontmatter keys as strings and mapping only known fields into `%ElixirClaw.Skills.Skill{}` avoids unsafe atom creation while still giving typed defaults for optional metadata.
