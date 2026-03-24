@@ -50,7 +50,8 @@ defmodule ElixirClaw.Channels.Discord do
     @behaviour AgentLoop
 
     @impl true
-    def process_message(session_id, content), do: ElixirClaw.Agent.Loop.process_message(session_id, content)
+    def process_message(session_id, content),
+      do: ElixirClaw.Agent.Loop.process_message(session_id, content)
   end
 
   @type state :: %{
@@ -229,7 +230,9 @@ defmodule ElixirClaw.Channels.Discord do
     case ensure_session(raw_message, session_key(raw_message), state) do
       {:ok, session_id, updated_state} ->
         case updated_state.agent_loop.process_message(session_id, content) do
-          {:ok, _response} -> updated_state
+          {:ok, _response} ->
+            updated_state
+
           {:error, reason} ->
             Logger.warning("Discord agent loop failed: #{inspect(reason)}")
             updated_state
@@ -307,7 +310,10 @@ defmodule ElixirClaw.Channels.Discord do
   defp put_session_mapping(state, key, session_id, raw_message) do
     state
     |> put_in([:session_by_user_channel, key], session_id)
-    |> put_in([:route_by_session, session_id], %{channel_id: channel_id(raw_message), user_id: user_id(raw_message)})
+    |> put_in([:route_by_session, session_id], %{
+      channel_id: channel_id(raw_message),
+      user_id: user_id(raw_message)
+    })
   end
 
   defp maybe_deliver(state, session_id, content) do
@@ -354,7 +360,7 @@ defmodule ElixirClaw.Channels.Discord do
 
   defp maybe_allow_mock(module, owner_pid) do
     if Code.ensure_loaded?(Mox) and function_exported?(module, :__mock_for__, 0) do
-      Mox.allow(module, owner_pid, self())
+      apply(Mox, :allow, [module, owner_pid, self()])
     end
   end
 
@@ -362,14 +368,24 @@ defmodule ElixirClaw.Channels.Discord do
   defp notify_test(_state, _message), do: :ok
 
   defp command?(content, command), do: String.starts_with?(String.trim_leading(content), command)
-  defp dm_message?(raw_message), do: is_nil(Map.get(raw_message, :guild_id, Map.get(raw_message, "guild_id")))
-  defp bot_message?(raw_message), do: Map.get(author(raw_message), :bot, Map.get(author(raw_message), "bot")) == true
+
+  defp dm_message?(raw_message),
+    do: is_nil(Map.get(raw_message, :guild_id, Map.get(raw_message, "guild_id")))
+
+  defp bot_message?(raw_message),
+    do: Map.get(author(raw_message), :bot, Map.get(author(raw_message), "bot")) == true
+
   defp self_message?(nil, _raw_message), do: false
   defp self_message?(bot_user_id, raw_message), do: user_id(raw_message) == bot_user_id
 
   defp author(raw_message), do: Map.get(raw_message, :author, Map.get(raw_message, "author", %{}))
-  defp user_id(raw_message), do: Map.get(author(raw_message), :id, Map.get(author(raw_message), "id"))
-  defp channel_id(raw_message), do: Map.get(raw_message, :channel_id, Map.get(raw_message, "channel_id"))
+
+  defp user_id(raw_message),
+    do: Map.get(author(raw_message), :id, Map.get(author(raw_message), "id"))
+
+  defp channel_id(raw_message),
+    do: Map.get(raw_message, :channel_id, Map.get(raw_message, "channel_id"))
+
   defp session_key(raw_message), do: {user_id(raw_message), channel_id(raw_message)}
 
   defp consumer_pid(%{pid: pid}) when is_pid(pid), do: pid
