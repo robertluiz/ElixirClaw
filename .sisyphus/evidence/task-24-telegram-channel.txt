@@ -1,0 +1,26 @@
+Task 24 — Telegram channel via telegex
+
+Implemented:
+- lib/elixir_claw/channels/telegram.ex
+- test/elixir_claw/channels/telegram_test.exs
+- test/support/mocks.ex updated with MockTelegex
+
+Verification:
+1. Targeted Telegram suite
+   Command:
+   C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/channels/telegram_test.exs
+   Result:
+   10 tests, 0 failures
+
+2. Full suite
+   Command:
+   C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test
+   Result:
+   1 doctest, 223 tests, 1 failure.
+   Remaining unrelated failure:
+   `ElixirClaw.Channels.DiscordTest` — "responds to !help without invoking the agent loop"
+   (`ElixirClaw.MockDiscordAPI.create_message/2` expected once, invoked 0 times).
+
+3. LSP diagnostics
+   Tool result:
+   BLOCKED — elixir-ls not installed in this environment, so lsp_diagnostics could not run for .ex/.exs files.
