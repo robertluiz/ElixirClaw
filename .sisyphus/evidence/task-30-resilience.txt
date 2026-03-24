@@ -1,0 +1,30 @@
+01:49:16.248 [info] Starting ElixirClaw.Channels.Supervisor with channels: none
+Running ExUnit with seed: 281112, max_cases: 1
+
+
+ElixirClaw.ResilienceTest [test/elixir_claw/resilience_test.exs]
+  * test RateLimiter allows up to the limit and rejects the next call [L#118]
+  * test RateLimiter allows up to the limit and rejects the next call (5.5ms) [L#118]
+  * test CircuitBreaker opens after three consecutive failures and rejects subsequent calls [L#73]
+01:49:16.514 [info] The function passed as a handler with ID #Reference<0.27229903.2506620933.140369> is a local function.
+This means that it is either an anonymous function or a capture of a function without a module specified. That may cause a performance penalty when calling that handler. For more details see the note in `telemetry:attach/4` documentation.
+
+https://hexdocs.pm/telemetry/telemetry.html#attach/4
+
+  * test CircuitBreaker opens after three consecutive failures and rejects subsequent calls (12.3ms) [L#73]
+  * test with_failover/3 does not fail over on auth error [L#38]
+  * test with_failover/3 does not fail over on auth error (2.4ms) [L#38]
+  * test call_with_timeout/2 returns timeout when function exceeds the timeout [L#55]
+  * test call_with_timeout/2 returns timeout when function exceeds the timeout (12.4ms) [L#55]
+  * test CircuitBreaker transitions to half_open after timeout and closes on success [L#101]
+  * test CircuitBreaker transitions to half_open after timeout and closes on success (64.9ms) [L#101]
+
+01:49:16.605 [info] The function passed as a handler with ID #Reference<0.27229903.2506620929.185873> is a local function.
+This means that it is either an anonymous function or a capture of a function without a module specified. That may cause a performance penalty when calling that handler. For more details see the note in `telemetry:attach/4` documentation.
+
+https://hexdocs.pm/telemetry/telemetry.html#attach/4
+  * test with_failover/3 fails over from timeout to secondary provider and emits telemetry [L#8]
+  * test with_failover/3 fails over from timeout to secondary provider and emits telemetry (0.3ms) [L#8]
+
+Finished in 0.2 seconds (0.00s async, 0.2s sync)
+6 tests, 0 failures

@@ -163,3 +163,8 @@
 - For startup parsing, treating raw TOML config as string-keyed maps all the way through keeps the implementation compatible with `Toml.decode/1` output and avoids any unsafe runtime atom conversion.
 - Secret interpolation is safest when exact `${VAR}` placeholders resolve only for env names ending in `_KEY`, `_TOKEN`, or `_SECRET`; non-secret placeholders should remain literal and unset secret placeholders should become `:missing` instead of exposing env names.
 - Dynamic startup filtering works best as a pure normalization pass: validate `enabled` types early, warn on unknown keys without rejecting configs, and skip only the specific enabled channel/provider missing its required secret while continuing with the rest.
+
+## Task 30 Learnings
+- For failover, keeping the policy pure and provider-agnostic works well: retry only on explicit transient atoms (`:timeout`, `:rate_limited`, `:server_error`), stop immediately on `:auth_error`, and emit telemetry only when actually moving to the next provider.
+- A small two-phase circuit breaker API (`allow_call` inside the GenServer, provider function execution outside it, then `record_result`) avoids turning the breaker process into a blocking bottleneck while still preserving closed/open/half-open transitions.
+- Token-bucket rate limiting stays deterministic in tests when the GenServer accepts an injected monotonic `time_fn`; storing bucket tokens as floats makes partial refill math straightforward without adding queueing or timers.
