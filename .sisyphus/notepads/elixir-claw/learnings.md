@@ -91,6 +91,11 @@
 - When OpenRouter config may be a root endpoint or a version root, normalizing `base_url` by appending `/chat/completions` only when needed keeps both default and Bypass test URLs working.
 - The repo's full `mix test` is currently blocked by pre-existing `ElixirClaw.Providers.AnthropicTest` failures because `ElixirClaw.Providers.Anthropic` is not implemented yet; OpenRouter-targeted tests and compile are green.
 
+## Task 16 Learnings
+- A small OAuth helper module fits the existing provider style well when it merges module config with per-call opts, uses explicit response normalization, and injects the HTTP requester for security-focused tests without logging secrets.
+- PKCE generation is simplest with 48 random bytes encoded via `Base.url_encode64/2`, which yields a 64-character verifier and a clean RFC 7636 `S256` challenge.
+- The in-memory token manager can keep the required three-key state shape and still support lazy auto-refresh by reading OAuth client config from application env instead of persisting any refresh metadata elsewhere.
+
 ## Task 15 Learnings
 - Copilot BYOK fits the same thin-wrapper pattern as other OpenAI-compatible providers: keep HTTP wiring local, and reuse `OpenAICompat` for message formatting, tool call parsing, and OpenAI-style token usage parsing.
 - Treating `base_url` as either a version root or a full chat-completions endpoint avoids hardcoding a single vendor URL while keeping Bypass tests easy to write.
