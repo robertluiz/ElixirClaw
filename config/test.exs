@@ -7,3 +7,5 @@ config :elixir_claw, ElixirClaw.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   journal_mode: :wal,
   pool_size: 10
+
+config :elixir_claw, cli_enabled: false

@@ -148,3 +148,8 @@
 - MCP tool registration fits the existing registry cleanly if the registry stores either classic tool modules or `%ElixirClaw.MCP.ToolWrapper{}` structs and dispatches metadata/execution through small helper functions instead of forcing dynamic module generation.
 - For Mox-based MCP wrapper tests, injecting the HTTP/stdio client modules through application env keeps the wrapper production-safe while letting supervised `ToolRegistry.execute/4` tasks hit global Mox expectations without changing the public wrapper API.
 - `register_mcp_tools/4` should normalize both tagged (`{:ok, tools}`) and plain-list `list_tools/1` client results, because the current MCP clients and inherited task notes disagree on return shape.
+
+## Task 27 Learnings
+- Making supervision-tree assembly a public `child_specs/0` function keeps application wiring testable without tearing down the globally started OTP application during tests.
+- Optional runtime integrations should be filtered before entering the supervisor tree; skipping invalid Telegram/MCP configs with generic warnings avoids startup crashes without leaking secrets.
+- In `mix test`, `cli_enabled: false` must be set in test config before the application boots, otherwise the CLI channel's stdin reader can block the suite at startup.

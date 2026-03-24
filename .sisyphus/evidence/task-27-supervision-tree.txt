@@ -1,0 +1,28 @@
+Task 27 — Application Supervisor Wiring — Full Supervision Tree
+
+Changed files:
+- lib/elixir_claw/application.ex
+- lib/elixir_claw/channels/supervisor.ex
+- lib/elixir_claw/mcp/supervisor.ex
+- test/elixir_claw/application_test.exs
+- config/test.exs
+
+Verification:
+1. Targeted test
+   Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/application_test.exs
+   Result: 5 tests, 0 failures
+
+2. Full suite
+   Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test
+   Result: 1 doctest, 228 tests, 0 failures
+
+3. Diagnostics
+   LSP diagnostics could not run because the configured Elixir language server is not installed in this environment:
+   "LSP server 'elixir-ls' is configured but NOT INSTALLED."
+
+Key runtime behavior verified by tests:
+- Top-level application child specs are assembled in required startup order.
+- Channels supervisor includes only enabled channels and marks optional children as transient.
+- Telegram startup is skipped with a warning when runtime config is invalid.
+- MCP supervisor stays empty by default and builds stdio/HTTP child specs from runtime env.
+- Test config disables CLI startup to avoid blocking stdin during mix test.
