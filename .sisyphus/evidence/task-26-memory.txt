@@ -1,0 +1,28 @@
+Task 26 — Memory Consolidation Evidence
+Date: 2026-03-23
+
+Implemented:
+- lib/elixir_claw/agent/memory.ex
+- test/elixir_claw/agent/memory_test.exs
+
+TDD evidence:
+1. Wrote test/elixir_claw/agent/memory_test.exs first.
+2. Initial red run:
+   Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/agent/memory_test.exs
+   Result: 6 failures because ElixirClaw.Agent.Memory was undefined.
+3. Implemented lib/elixir_claw/agent/memory.ex.
+4. Green run:
+   Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/agent/memory_test.exs
+   Result: 6 tests, 0 failures.
+
+Verification:
+- Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat compile --warnings-as-errors
+  Result: compile succeeded for current code.
+- Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test
+  Result: full suite is NOT green due pre-existing unrelated MCP failures outside Task 26 scope:
+    - ElixirClaw.MCP.StdioClientTest fails with {:error, :command_not_found}
+    - ElixirClaw.MCP.HTTPClientTest fails because ElixirClaw.MCP.HTTPClient is undefined
+  Task 26 tests remain green.
+
+Git intent:
+- Requested commit message: feat(memory): add conversation memory consolidation with provider-based summarization

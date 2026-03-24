@@ -110,3 +110,8 @@
 - A simple SKILL.md parser can stay dependency-free by splitting on lines, requiring opening/closing `---` delimiters, and only supporting the frontmatter shapes the project actually needs.
 - Keeping frontmatter keys as strings and mapping only known fields into `%ElixirClaw.Skills.Skill{}` avoids unsafe atom creation while still giving typed defaults for optional metadata.
 - Returning `{:error, {path, reason}}` from directory loads preserves per-file failures without aborting the whole scan, which makes malformed skill fixtures easy to surface in tests.
+
+## Task 26 Learnings
+- Conversation consolidation can stay small and testable as a synchronous module when it scopes itself to Ecto reads/writes plus a single provider callback; a transaction is enough to swap old history for one summary message safely.
+- For this repo's SQLite in-memory tests, `setup_all` with shared sandbox ownership plus explicit table creation keeps new Ecto-backed test files deterministic without introducing a separate DataCase helper.
+- Ordering by `inserted_at` alone is not stable for same-timestamp fixture rows; adding `id` as a tiebreaker or sorting assertions avoids flaky message-history tests.
