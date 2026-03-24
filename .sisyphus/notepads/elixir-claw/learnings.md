@@ -178,6 +178,16 @@
 - On Windows, ANSI color in cmd.exe requires the `VirtualTerminalLevel` registry key; Windows Terminal and PowerShell 7 work without changes.
 - Always run `mix test` with the full Chocolatey path on Windows: `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test`.
 
+## Task 32 Learnings
+- `ecto_sqlite3` injects writable pragmas like `journal_mode: :wal` into repo startup, so a truly readonly OpenCode import path is more reliable with `Exqlite.Sqlite3.open(path, [:readonly])` while keeping a secondary repo module available for future integration.
+- Local `messages.inserted_at` stores second precision only in this repo's schema, so imported OpenCode millisecond timestamps need truncation; preserving source ordering is easiest by reusing stripped OpenCode message IDs as local primary keys.
+- For OpenCode parts, a small allowlist extractor (`text`, `tool_results.content/text/output/result`) plus a 10KB byte cap is enough to preserve useful context while skipping oversized tool payloads.
+
+## Task 33 Learnings
+- A thin OpenCode exporter can stay synchronous and predictable by reusing `Session.Manager.get_session/1` for session existence, then loading persisted message history directly from `ElixirClaw.Schema.Message` ordered by `inserted_at` and `id`.
+- For Req-based HTTP calls on Windows tests, transport failures against loopback ports may surface as `:timeout` or `:econnaborted` rather than a clean `:econnrefused`, so normalization logic and TCP-based test doubles need to cover both cases.
+- Large tool outputs are easiest to cap at export time by truncating only `role == "tool"` message content and appending an explicit marker, which preserves conversation flow without pushing oversized payloads into OpenCode.
+
 ## Task 34 Learnings
 - JSONC comment stripping for OpenCode configs must respect quoted strings; a small char-by-char state machine avoids corrupting `http://` and `https://` URLs that a naive `//` regex would truncate.
 - The safest OpenCode import shape is an allow-list projection: ignore `providers` entirely, drop `env`, reject secret-like keys recursively, and emit only `%{name, transport, command|url, args}` plus deduplicated skill path strings.

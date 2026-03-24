@@ -1,0 +1,20 @@
+Task 32 — OpenCode Session Importer (SQLite Reader)
+
+Files added:
+- lib/elixir_claw/opencode/importer.ex
+- lib/elixir_claw/opencode/repo.ex
+- lib/elixir_claw/opencode/schemas/session.ex
+- lib/elixir_claw/opencode/schemas/message.ex
+- lib/elixir_claw/opencode/schemas/part.ex
+- test/elixir_claw/opencode/importer_test.exs
+- test/fixtures/opencode/.gitkeep
+
+Verification:
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/opencode/importer_test.exs` → 4 tests, 0 failures
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test` → completed successfully in tool run (output truncated by tool after passing run)
+
+Notes:
+- `lsp_diagnostics` could not run because `elixir-ls` is not installed in this environment.
+- `mix compile --warnings-as-errors` is currently blocked by pre-existing project warnings outside Task 32 scope:
+  - module redefinition warnings under `lib/elixir_claw/channels/discord/*` and `lib/elixir_claw/channels/telegram/api.ex`
+  - `Mox.allow/3` warning in `lib/elixir_claw/channels/discord.ex`
