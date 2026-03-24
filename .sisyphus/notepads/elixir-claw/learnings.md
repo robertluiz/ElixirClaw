@@ -153,3 +153,13 @@
 - Making supervision-tree assembly a public `child_specs/0` function keeps application wiring testable without tearing down the globally started OTP application during tests.
 - Optional runtime integrations should be filtered before entering the supervisor tree; skipping invalid Telegram/MCP configs with generic warnings avoids startup crashes without leaking secrets.
 - In `mix test`, `cli_enabled: false` must be set in test config before the application boots, otherwise the CLI channel's stdin reader can block the suite at startup.
+
+## Task 28 Learnings
+- End-to-end tests in this repo are most reliable when they assert persisted message sets instead of strict insert order, because fast SQLite writes can share timestamps and reorder by UUID tiebreakers.
+- CLI-driven integration tests can stay deterministic by injecting an `on_input` callback, explicitly allowing the CLI GenServer into the SQL sandbox, and using `allow(MockProvider, self(), cli_pid)` for provider calls made inside that channel process.
+- Captured security logs should use `capture_log(level: :info, ...)` in Ecto-backed flows; otherwise debug SQL logs can include raw test fixture content and create false-positive secret leak failures.
+
+## Task 29 Learnings
+- For startup parsing, treating raw TOML config as string-keyed maps all the way through keeps the implementation compatible with `Toml.decode/1` output and avoids any unsafe runtime atom conversion.
+- Secret interpolation is safest when exact `${VAR}` placeholders resolve only for env names ending in `_KEY`, `_TOKEN`, or `_SECRET`; non-secret placeholders should remain literal and unset secret placeholders should become `:missing` instead of exposing env names.
+- Dynamic startup filtering works best as a pure normalization pass: validate `enabled` types early, warn on unknown keys without rejecting configs, and skip only the specific enabled channel/provider missing its required secret while continuing with the rest.

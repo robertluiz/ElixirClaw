@@ -1,0 +1,35 @@
+Command:
+`C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/config/startup_manager_test.exs --trace`
+
+Output:
+```text
+01:47:19.027 [info] Starting ElixirClaw.Channels.Supervisor with channels: none
+Running ExUnit with seed: 54204, max_cases: 1
+
+
+ElixirClaw.Config.StartupManagerTest [test/elixir_claw/config/startup_manager_test.exs]
+  * test enabled_providers/1 logs warning and skips enabled providers missing required secrets [L#89]
+  * test enabled_providers/1 logs warning and skips enabled providers missing required secrets (9.9ms) [L#89]
+  * test enabled_channels/1 logs warning and skips enabled channels missing required secrets [L#155]
+  * test enabled_channels/1 logs warning and skips enabled channels missing required secrets (0.7ms) [L#155]
+  * test enabled_channels/1 returns only enabled channels and defaults missing enabled to false [L#133]
+  * test enabled_channels/1 returns only enabled channels and defaults missing enabled to false (2.6ms) [L#133]
+  * test enabled_providers/1 warns on unknown keys and raises on invalid enabled type [L#107]
+  * test enabled_providers/1 warns on unknown keys and raises on invalid enabled type (12.5ms) [L#107]
+  * test validate_required_secrets/1 returns missing fields for enabled providers and channels [L#46]
+  * test validate_required_secrets/1 returns missing fields for enabled providers and channels (0.00ms) [L#46]
+  * test enabled_providers/1 returns only enabled providers with resolved secrets [L#68]
+  * test enabled_providers/1 returns only enabled providers with resolved secrets (0.1ms) [L#68]
+  * test interpolate_env_vars/1 returns :missing for unset allowed secret env vars [L#33]
+  * test interpolate_env_vars/1 returns :missing for unset allowed secret env vars (0.00ms) [L#33]
+  * test interpolate_env_vars/1 interpolates only allowed secret env vars and leaves restricted vars literal [L#9]
+  * test interpolate_env_vars/1 interpolates only allowed secret env vars and leaves restricted vars literal (0.00ms) [L#9]
+
+Finished in 0.1 seconds (0.00s async, 0.1s sync)
+8 tests, 0 failures
+```
+
+Additional verification:
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/config/startup_manager_test.exs` → 8 tests, 0 failures
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test` currently fails in pre-existing unrelated resilience tests: `1 doctest, 249 tests, 6 failures`
+- `lsp_diagnostics` could not run because `elixir-ls` is not installed in this environment
