@@ -1,0 +1,26 @@
+Task 18 — Skills Loader evidence
+
+Created files:
+- lib/elixir_claw/skills/loader.ex
+- test/elixir_claw/skills/loader_test.exs
+- test/fixtures/skills/valid_skill.md
+- test/fixtures/skills/minimal_skill.md
+- test/fixtures/skills/no_frontmatter.md
+- test/fixtures/skills/missing_name.md
+- test/fixtures/skills/malformed_frontmatter.md
+
+TDD evidence:
+- Initial targeted test run failed before implementation because `ElixirClaw.Skills.Skill` was undefined in the new test file.
+- After implementing the loader and struct, the targeted skill-loader suite passed.
+
+Verification:
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/skills/loader_test.exs`
+  Result: 8 tests, 0 failures
+- `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test`
+  Result: 1 doctest, 140 tests, 0 failures
+
+Diagnostics:
+- `lsp_diagnostics` could not run because `elixir-ls` is configured but not installed in this environment.
+
+Requested commit:
+- feat(skills): add SKILL.md loader with frontmatter parsing

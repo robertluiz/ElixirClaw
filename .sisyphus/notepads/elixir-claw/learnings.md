@@ -100,3 +100,8 @@
 - Copilot BYOK fits the same thin-wrapper pattern as other OpenAI-compatible providers: keep HTTP wiring local, and reuse `OpenAICompat` for message formatting, tool call parsing, and OpenAI-style token usage parsing.
 - Treating `base_url` as either a version root or a full chat-completions endpoint avoids hardcoding a single vendor URL while keeping Bypass tests easy to write.
 - Logging only an insecure-HTTP warning for `http://` endpoints satisfies security visibility without leaking API keys or request payloads.
+
+## Task 18 Learnings
+- A simple SKILL.md parser can stay dependency-free by splitting on lines, requiring opening/closing `---` delimiters, and only supporting the frontmatter shapes the project actually needs.
+- Keeping frontmatter keys as strings and mapping only known fields into `%ElixirClaw.Skills.Skill{}` avoids unsafe atom creation while still giving typed defaults for optional metadata.
+- Returning `{:error, {path, reason}}` from directory loads preserves per-file failures without aborting the whole scan, which makes malformed skill fixtures easy to surface in tests.
