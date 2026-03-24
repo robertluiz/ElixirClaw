@@ -1,0 +1,1419 @@
+Running ExUnit with seed: 650025, max_cases: 24
+
+.........
+Finished in 0.1 seconds (0.1s async, 0.00s sync)
+9 tests, 0 failures
+Running ExUnit with seed: 263652, max_cases: 24
+
+.......................................................................................
+00:59:21.009 [error] Task #PID<0.621.0> started from #PID<0.618.0> terminating
+** (RuntimeError) boom
+    test/elixir_claw/tools/registry_test.exs:121: anonymous fn/2 in ElixirClaw.Tools.RegistryTest."test execute/4 catches tool exceptions and returns an error tuple"/1
+    (elixir 1.19.5) lib/task/supervised.ex:105: Task.Supervised.invoke_mfa/2
+    (elixir 1.19.5) lib/task/supervised.ex:40: Task.Supervised.reply/4
+Function: #Function<0.48468053/0 in ElixirClaw.Tools.Registry.execute/4>
+    Args: []
+............................................
+00:59:21.440 [error] GenServer #PID<0.1176.0> terminating
+** (stop) :process_exited
+Last message: {#Reference<0.2482090364.1693712394.127723>, {:exit_status, 1}}
+State: %{port: #Reference<0.2482090364.1693712394.127723>, next_id: 2, timeout_ms: 100, send_fn: #Function<1.53229423/2 in ElixirClaw.MCP.StdioClientTest.start_client/1>, port_close_fn: #Function<2.53229423/1 in ElixirClaw.MCP.StdioClientTest.start_client/1>, pending_requests: %{}}
+.
+00:59:21.497 [debug] MCP client event: initializing
+
+00:59:21.498 [debug] MCP event details: %{protocol_version: "2025-03-26", capabilities: %{}, transport: Hermes.Transport.StreamableHTTP}
+
+00:59:21.508 [debug] MCP client event: handshake
+
+00:59:21.508 [debug] MCP event details: "Making initial client <> server handshake"
+
+00:59:21.518 [debug] [MCP message] outgoing request: id=req_GJ-q-EZUNcAGCgn3jro= method=initialize
+
+00:59:21.518 [debug] [MCP message] outgoing request data: %{"method" => "initialize", "params" => %{"capabilities" => %{}, "clientInfo" => %{"name" => "ElixirClaw", "version" => "0.1.0"}, "protocolVersion" => "2025-03-26"}}
+
+00:59:21.536 [debug] MCP transport event: sending_http_request
+
+00:59:21.536 [debug] MCP transport details: %{size: 185, url: "http://localhost:58675/mcp"}
+
+00:59:21.536 [debug] MCP transport event: http_request
+
+00:59:21.537 [debug] MCP transport details: %{url: "http://localhost:58675/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json"}, method: :post}
+
+00:59:21.545 [debug] MCP transport event: got_http_response
+
+00:59:21.545 [debug] MCP transport details: %{status: 200}
+
+00:59:21.545 [debug] MCP transport event: http_response
+
+00:59:21.545 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 172, has_session: true}
+
+00:59:21.549 [debug] [MCP message] incoming response: id=req_GJ-q-EZUNcAGCgn3jro= success
+
+00:59:21.549 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-EZUNcAGCgn3jro=", "jsonrpc" => "2.0", "result" => %{"capabilities" => %{"tools" => %{}}, "protocolVersion" => "2025-03-26", "serverInfo" => %{"name" => "Bypass MCP", "version" => "1.0.0"}}}
+
+00:59:21.549 [debug] MCP client event: initialized
+
+00:59:21.549 [debug] MCP event details: %{capabilities: %{"tools" => %{}}, server_info: %{"name" => "Bypass MCP", "version" => "1.0.0"}}
+
+00:59:21.549 [debug] [MCP message] outgoing notification: method=notifications/initialized
+
+00:59:21.549 [debug] [MCP message] outgoing notification data: %{"method" => "notifications/initialized", "params" => %{}}
+
+00:59:21.549 [debug] MCP transport event: sending_http_request
+
+00:59:21.549 [debug] MCP transport details: %{size: 67, url: "http://localhost:58675/mcp"}
+
+00:59:21.549 [debug] MCP transport event: http_request
+
+00:59:21.549 [debug] MCP transport details: %{url: "http://localhost:58675/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.550 [debug] MCP transport event: got_http_response
+
+00:59:21.550 [debug] MCP transport details: %{status: 202}
+
+00:59:21.550 [debug] MCP transport event: http_response
+
+00:59:21.550 [debug] MCP transport details: %{status: 202, content_type: "application/json", body_size: 0, has_session: true}
+
+00:59:21.572 [debug] MCP client event: terminating
+
+00:59:21.572 [debug] MCP event details: %{name: "ElixirClaw", reason: :normal}
+..
+00:59:21.580 [debug] MCP client event: initializing
+
+00:59:21.580 [debug] MCP event details: %{protocol_version: "2025-03-26", capabilities: %{}, transport: Hermes.Transport.StreamableHTTP}
+
+00:59:21.581 [debug] MCP client event: handshake
+
+00:59:21.581 [debug] MCP event details: "Making initial client <> server handshake"
+
+00:59:21.581 [debug] [MCP message] outgoing request: id=req_GJ-q-EpA5cAhu59kf_g= method=initialize
+
+00:59:21.581 [debug] [MCP message] outgoing request data: %{"method" => "initialize", "params" => %{"capabilities" => %{}, "clientInfo" => %{"name" => "ElixirClaw", "version" => "0.1.0"}, "protocolVersion" => "2025-03-26"}}
+
+00:59:21.581 [debug] MCP transport event: sending_http_request
+
+00:59:21.581 [debug] MCP transport details: %{size: 185, url: "http://localhost:58678/mcp"}
+
+00:59:21.581 [debug] MCP transport event: http_request
+
+00:59:21.581 [debug] MCP transport details: %{url: "http://localhost:58678/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json"}, method: :post}
+
+00:59:21.587 [debug] MCP transport event: got_http_response
+
+00:59:21.587 [debug] MCP transport details: %{status: 200}
+
+00:59:21.587 [debug] MCP transport event: http_response
+
+00:59:21.587 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 172, has_session: true}
+
+00:59:21.588 [debug] [MCP message] incoming response: id=req_GJ-q-EpA5cAhu59kf_g= success
+
+00:59:21.588 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-EpA5cAhu59kf_g=", "jsonrpc" => "2.0", "result" => %{"capabilities" => %{"tools" => %{}}, "protocolVersion" => "2025-03-26", "serverInfo" => %{"name" => "Bypass MCP", "version" => "1.0.0"}}}
+
+00:59:21.588 [debug] MCP client event: initialized
+
+00:59:21.588 [debug] MCP event details: %{capabilities: %{"tools" => %{}}, server_info: %{"name" => "Bypass MCP", "version" => "1.0.0"}}
+
+00:59:21.588 [debug] [MCP message] outgoing notification: method=notifications/initialized
+
+00:59:21.588 [debug] [MCP message] outgoing notification data: %{"method" => "notifications/initialized", "params" => %{}}
+
+00:59:21.588 [debug] MCP transport event: sending_http_request
+
+00:59:21.588 [debug] MCP transport details: %{size: 67, url: "http://localhost:58678/mcp"}
+
+00:59:21.589 [debug] MCP transport event: http_request
+
+00:59:21.589 [debug] MCP transport details: %{url: "http://localhost:58678/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.590 [debug] MCP transport event: got_http_response
+
+00:59:21.590 [debug] MCP transport details: %{status: 202}
+
+00:59:21.590 [debug] MCP transport event: http_response
+
+00:59:21.590 [debug] MCP transport details: %{status: 202, content_type: "application/json", body_size: 0, has_session: true}
+
+00:59:21.622 [debug] MCP client event: terminating
+
+00:59:21.622 [debug] MCP event details: %{name: "ElixirClaw", reason: :normal}
+.
+00:59:21.628 [debug] MCP client event: initializing
+
+00:59:21.628 [debug] MCP event details: %{protocol_version: "2025-03-26", capabilities: %{}, transport: Hermes.Transport.StreamableHTTP}
+
+00:59:21.628 [debug] MCP client event: handshake
+
+00:59:21.628 [debug] MCP event details: "Making initial client <> server handshake"
+
+00:59:21.628 [debug] [MCP message] outgoing request: id=req_GJ-q-E0K9cDOWQKUmvk= method=initialize
+
+00:59:21.628 [debug] [MCP message] outgoing request data: %{"method" => "initialize", "params" => %{"capabilities" => %{}, "clientInfo" => %{"name" => "ElixirClaw", "version" => "0.1.0"}, "protocolVersion" => "2025-03-26"}}
+
+00:59:21.628 [debug] MCP transport event: sending_http_request
+
+00:59:21.628 [debug] MCP transport details: %{size: 185, url: "http://localhost:58680/mcp"}
+
+00:59:21.628 [debug] MCP transport event: http_request
+
+00:59:21.628 [debug] MCP transport details: %{url: "http://localhost:58680/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json"}, method: :post}
+
+00:59:21.634 [debug] MCP transport event: got_http_response
+
+00:59:21.634 [debug] MCP transport details: %{status: 200}
+
+00:59:21.634 [debug] MCP transport event: http_response
+
+00:59:21.634 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 172, has_session: true}
+
+00:59:21.635 [debug] [MCP message] incoming response: id=req_GJ-q-E0K9cDOWQKUmvk= success
+
+00:59:21.635 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-E0K9cDOWQKUmvk=", "jsonrpc" => "2.0", "result" => %{"capabilities" => %{"tools" => %{}}, "protocolVersion" => "2025-03-26", "serverInfo" => %{"name" => "Bypass MCP", "version" => "1.0.0"}}}
+
+00:59:21.635 [debug] MCP client event: initialized
+
+00:59:21.635 [debug] MCP event details: %{capabilities: %{"tools" => %{}}, server_info: %{"name" => "Bypass MCP", "version" => "1.0.0"}}
+
+00:59:21.635 [debug] [MCP message] outgoing notification: method=notifications/initialized
+
+00:59:21.635 [debug] [MCP message] outgoing notification data: %{"method" => "notifications/initialized", "params" => %{}}
+
+00:59:21.635 [debug] MCP transport event: sending_http_request
+
+00:59:21.635 [debug] MCP transport details: %{size: 67, url: "http://localhost:58680/mcp"}
+
+00:59:21.635 [debug] MCP transport event: http_request
+
+00:59:21.635 [debug] MCP transport details: %{url: "http://localhost:58680/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.637 [debug] MCP transport event: got_http_response
+
+00:59:21.637 [debug] MCP transport details: %{status: 202}
+
+00:59:21.637 [debug] MCP transport event: http_response
+
+00:59:21.637 [debug] MCP transport details: %{status: 202, content_type: "application/json", body_size: 0, has_session: true}
+
+00:59:21.670 [debug] [MCP message] outgoing request: id=req_GJ-q-E-ZpcDOWQLtgt8= method=tools/list
+
+00:59:21.670 [debug] [MCP message] outgoing request data: %{"method" => "tools/list", "params" => %{}}
+
+00:59:21.670 [debug] MCP transport event: sending_http_request
+
+00:59:21.670 [debug] MCP transport details: %{size: 84, url: "http://localhost:58680/mcp"}
+
+00:59:21.670 [debug] MCP transport event: http_request
+
+00:59:21.671 [debug] MCP transport details: %{url: "http://localhost:58680/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.673 [debug] MCP transport event: got_http_response
+
+00:59:21.673 [debug] MCP transport details: %{status: 200}
+
+00:59:21.673 [debug] MCP transport event: http_response
+
+00:59:21.673 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 204, has_session: true}
+
+00:59:21.673 [debug] [MCP message] incoming response: id=req_GJ-q-E-ZpcDOWQLtgt8= success
+
+00:59:21.673 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-E-ZpcDOWQLtgt8=", "jsonrpc" => "2.0", "result" => %{"tools" => [%{"description" => "Echo text", "inputSchema" => %{"properties" => %{"text" => %{"type" => "string"}}, "required" => ["text"], "type" => "object"}, "name" => "echo"}]}}
+
+00:59:21.677 [debug] MCP client event: success_response
+
+00:59:21.677 [debug] MCP event details: %{id: "req_GJ-q-E-ZpcDOWQLtgt8=", method: "tools/list"}
+.
+00:59:21.681 [debug] MCP client event: initializing
+
+00:59:21.681 [debug] MCP event details: %{protocol_version: "2025-03-26", capabilities: %{}, transport: Hermes.Transport.StreamableHTTP}
+
+00:59:21.681 [debug] MCP client event: handshake
+
+00:59:21.681 [debug] MCP event details: "Making initial client <> server handshake"
+
+00:59:21.681 [debug] [MCP message] outgoing request: id=req_GJ-q-FBCZcAKwzAbM8M= method=initialize
+
+00:59:21.681 [debug] [MCP message] outgoing request data: %{"method" => "initialize", "params" => %{"capabilities" => %{}, "clientInfo" => %{"name" => "ElixirClaw", "version" => "0.1.0"}, "protocolVersion" => "2025-03-26"}}
+
+00:59:21.682 [debug] MCP transport event: sending_http_request
+
+00:59:21.682 [debug] MCP transport details: %{size: 185, url: "http://localhost:58682/mcp"}
+
+00:59:21.682 [debug] MCP transport event: http_request
+
+00:59:21.682 [debug] MCP transport details: %{url: "http://localhost:58682/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json"}, method: :post}
+
+00:59:21.687 [debug] MCP transport event: got_http_response
+
+00:59:21.687 [debug] MCP transport details: %{status: 200}
+
+00:59:21.687 [debug] MCP transport event: http_response
+
+00:59:21.687 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 172, has_session: true}
+
+00:59:21.687 [debug] [MCP message] incoming response: id=req_GJ-q-FBCZcAKwzAbM8M= success
+
+00:59:21.688 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-FBCZcAKwzAbM8M=", "jsonrpc" => "2.0", "result" => %{"capabilities" => %{"tools" => %{}}, "protocolVersion" => "2025-03-26", "serverInfo" => %{"name" => "Bypass MCP", "version" => "1.0.0"}}}
+
+00:59:21.688 [debug] MCP client event: initialized
+
+00:59:21.688 [debug] MCP event details: %{capabilities: %{"tools" => %{}}, server_info: %{"name" => "Bypass MCP", "version" => "1.0.0"}}
+
+00:59:21.688 [debug] [MCP message] outgoing notification: method=notifications/initialized
+
+00:59:21.688 [debug] [MCP message] outgoing notification data: %{"method" => "notifications/initialized", "params" => %{}}
+
+00:59:21.688 [debug] MCP transport event: sending_http_request
+
+00:59:21.688 [debug] MCP transport details: %{size: 67, url: "http://localhost:58682/mcp"}
+
+00:59:21.689 [debug] MCP transport event: http_request
+
+00:59:21.689 [debug] MCP transport details: %{url: "http://localhost:58682/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.690 [debug] MCP transport event: got_http_response
+
+00:59:21.690 [debug] MCP transport details: %{status: 202}
+
+00:59:21.690 [debug] MCP transport event: http_response
+
+00:59:21.690 [debug] MCP transport details: %{status: 202, content_type: "application/json", body_size: 0, has_session: true}
+
+00:59:21.722 [debug] [MCP message] outgoing request: id=req_GJ-q-FKx1cAKwzAt3R8= method=tools/call
+
+00:59:21.722 [debug] [MCP message] outgoing request data: %{"method" => "tools/call", "params" => %{"arguments" => %{}, "name" => "large"}}
+
+00:59:21.722 [debug] MCP transport event: sending_http_request
+
+00:59:21.722 [debug] MCP transport details: %{size: 113, url: "http://localhost:58682/mcp"}
+
+00:59:21.723 [debug] MCP transport event: http_request
+
+00:59:21.723 [debug] MCP transport details: %{url: "http://localhost:58682/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.740 [debug] MCP transport event: got_http_response
+
+00:59:21.740 [debug] MCP transport details: %{status: 200}
+
+00:59:21.740 [debug] MCP transport event: http_response
+
+00:59:21.740 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 70114, has_session: true}
+
+00:59:21.741 [debug] [MCP message] incoming response: id=req_GJ-q-FKx1cAKwzAt3R8= success
+
+00:59:21.741 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-FKx1cAKwzAt3R8=", "jsonrpc" => "2.0", "result" => %{"content" => [%{"text" => "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" <> ..., "type" => "text"}], "isError" => false}}
+
+00:59:21.741 [debug] MCP client event: success_response
+
+00:59:21.741 [debug] MCP event details: %{id: "req_GJ-q-FKx1cAKwzAt3R8=", method: "tools/call"}
+
+00:59:21.743 [debug] MCP client event: terminating
+.
+00:59:21.746 [debug] MCP client event: initializing
+
+00:59:21.746 [debug] MCP event details: %{protocol_version: "2025-03-26", capabilities: %{}, transport: Hermes.Transport.StreamableHTTP}
+
+00:59:21.747 [debug] MCP client event: handshake
+
+00:59:21.747 [debug] MCP event details: "Making initial client <> server handshake"
+
+00:59:21.747 [debug] [MCP message] outgoing request: id=req_GJ-q-FQltcCWwZURj-U= method=initialize
+
+00:59:21.747 [debug] [MCP message] outgoing request data: %{"method" => "initialize", "params" => %{"capabilities" => %{}, "clientInfo" => %{"name" => "ElixirClaw", "version" => "0.1.0"}, "protocolVersion" => "2025-03-26"}}
+
+00:59:21.747 [debug] MCP transport event: sending_http_request
+
+00:59:21.748 [debug] MCP transport details: %{size: 185, url: "http://localhost:58684/mcp"}
+
+00:59:21.748 [debug] MCP transport event: http_request
+
+00:59:21.748 [debug] MCP transport details: %{url: "http://localhost:58684/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json"}, method: :post}
+
+00:59:21.752 [debug] MCP transport event: got_http_response
+
+00:59:21.752 [debug] MCP transport details: %{status: 200}
+
+00:59:21.752 [debug] MCP transport event: http_response
+
+00:59:21.752 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 172, has_session: true}
+
+00:59:21.753 [debug] [MCP message] incoming response: id=req_GJ-q-FQltcCWwZURj-U= success
+
+00:59:21.753 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-FQltcCWwZURj-U=", "jsonrpc" => "2.0", "result" => %{"capabilities" => %{"tools" => %{}}, "protocolVersion" => "2025-03-26", "serverInfo" => %{"name" => "Bypass MCP", "version" => "1.0.0"}}}
+
+00:59:21.753 [debug] MCP client event: initialized
+
+00:59:21.753 [debug] MCP event details: %{capabilities: %{"tools" => %{}}, server_info: %{"name" => "Bypass MCP", "version" => "1.0.0"}}
+
+00:59:21.753 [debug] [MCP message] outgoing notification: method=notifications/initialized
+
+00:59:21.753 [debug] [MCP message] outgoing notification data: %{"method" => "notifications/initialized", "params" => %{}}
+
+00:59:21.753 [debug] MCP transport event: sending_http_request
+
+00:59:21.753 [debug] MCP transport details: %{size: 67, url: "http://localhost:58684/mcp"}
+
+00:59:21.753 [debug] MCP transport event: http_request
+
+00:59:21.753 [debug] MCP transport details: %{url: "http://localhost:58684/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.755 [debug] MCP transport event: got_http_response
+
+00:59:21.755 [debug] MCP transport details: %{status: 202}
+
+00:59:21.756 [debug] MCP transport event: http_response
+
+00:59:21.756 [debug] MCP transport details: %{status: 202, content_type: "application/json", body_size: 0, has_session: true}
+
+00:59:21.787 [debug] [MCP message] outgoing request: id=req_GJ-q-FaHFcCWwZVqktI= method=tools/call
+
+00:59:21.787 [debug] [MCP message] outgoing request data: %{"method" => "tools/call", "params" => %{"arguments" => %{"text" => "hello"}, "name" => "echo"}}
+
+00:59:21.787 [debug] MCP transport event: sending_http_request
+
+00:59:21.787 [debug] MCP transport details: %{size: 126, url: "http://localhost:58684/mcp"}
+
+00:59:21.787 [debug] MCP transport event: http_request
+
+00:59:21.788 [debug] MCP transport details: %{url: "http://localhost:58684/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.789 [debug] MCP transport event: got_http_response
+
+00:59:21.789 [debug] MCP transport details: %{status: 200}
+
+00:59:21.789 [debug] MCP transport event: http_response
+
+00:59:21.789 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 119, has_session: true}
+
+00:59:21.790 [debug] [MCP message] incoming response: id=req_GJ-q-FaHFcCWwZVqktI= success
+
+00:59:21.790 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-FaHFcCWwZVqktI=", "jsonrpc" => "2.0", "result" => %{"content" => [%{"text" => "hello", "type" => "text"}], "isError" => false}}
+
+00:59:21.790 [debug] MCP client event: success_response
+
+00:59:21.790 [debug] MCP event details: %{id: "req_GJ-q-FaHFcCWwZVqktI=", method: "tools/call"}
+
+00:59:21.790 [debug] MCP client event: terminating
+.
+00:59:21.792 [debug] MCP client event: initializing
+
+00:59:21.792 [debug] MCP event details: %{protocol_version: "2025-03-26", capabilities: %{}, transport: Hermes.Transport.StreamableHTTP}
+
+00:59:21.792 [debug] MCP client event: handshake
+
+00:59:21.792 [debug] MCP event details: "Making initial client <> server handshake"
+
+00:59:21.792 [debug] [MCP message] outgoing request: id=req_GJ-q-FbelcDYSn4lBsQ= method=initialize
+
+00:59:21.792 [debug] [MCP message] outgoing request data: %{"method" => "initialize", "params" => %{"capabilities" => %{}, "clientInfo" => %{"name" => "ElixirClaw", "version" => "0.1.0"}, "protocolVersion" => "2025-03-26"}}
+
+00:59:21.792 [debug] MCP transport event: sending_http_request
+
+00:59:21.792 [debug] MCP transport details: %{size: 185, url: "http://localhost:58686/mcp"}
+
+00:59:21.792 [debug] MCP transport event: http_request
+
+00:59:21.792 [debug] MCP transport details: %{url: "http://localhost:58686/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json"}, method: :post}
+
+00:59:21.795 [debug] MCP transport event: got_http_response
+
+00:59:21.795 [debug] MCP transport details: %{status: 200}
+
+00:59:21.795 [debug] MCP transport event: http_response
+
+00:59:21.796 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 172, has_session: true}
+
+00:59:21.796 [debug] [MCP message] incoming response: id=req_GJ-q-FbelcDYSn4lBsQ= success
+
+00:59:21.796 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-FbelcDYSn4lBsQ=", "jsonrpc" => "2.0", "result" => %{"capabilities" => %{"tools" => %{}}, "protocolVersion" => "2025-03-26", "serverInfo" => %{"name" => "Bypass MCP", "version" => "1.0.0"}}}
+
+00:59:21.796 [debug] MCP client event: initialized
+
+00:59:21.796 [debug] MCP event details: %{capabilities: %{"tools" => %{}}, server_info: %{"name" => "Bypass MCP", "version" => "1.0.0"}}
+
+00:59:21.796 [debug] [MCP message] outgoing notification: method=notifications/initialized
+
+00:59:21.796 [debug] [MCP message] outgoing notification data: %{"method" => "notifications/initialized", "params" => %{}}
+
+00:59:21.796 [debug] MCP transport event: sending_http_request
+
+00:59:21.796 [debug] MCP transport details: %{size: 67, url: "http://localhost:58686/mcp"}
+
+00:59:21.796 [debug] MCP transport event: http_request
+
+00:59:21.796 [debug] MCP transport details: %{url: "http://localhost:58686/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.796 [debug] MCP transport event: got_http_response
+
+00:59:21.796 [debug] MCP transport details: %{status: 202}
+
+00:59:21.796 [debug] MCP transport event: http_response
+
+00:59:21.796 [debug] MCP transport details: %{status: 202, content_type: "application/json", body_size: 0, has_session: true}
+
+00:59:21.821 [debug] [MCP message] outgoing request: id=req_GJ-q-FiaVcDYSn50wlM= method=tools/call
+
+00:59:21.821 [debug] [MCP message] outgoing request data: %{"method" => "tools/call", "params" => %{"arguments" => %{}, "name" => "slow"}}
+
+00:59:21.822 [debug] MCP transport event: sending_http_request
+
+00:59:21.822 [debug] MCP transport details: %{size: 112, url: "http://localhost:58686/mcp"}
+
+00:59:21.822 [debug] MCP transport event: http_request
+
+00:59:21.822 [debug] MCP transport details: %{url: "http://localhost:58686/mcp", headers: %{"accept" => "application/json, text/event-stream", "content-type" => "application/json", "mcp-session-id" => "session-123"}, method: :post}
+
+00:59:21.906 [debug] MCP transport event: got_http_response
+
+00:59:21.906 [debug] MCP transport details: %{status: 200}
+
+00:59:21.907 [debug] MCP transport event: http_response
+
+00:59:21.907 [debug] MCP transport details: %{status: 200, content_type: "application/json", body_size: 122, has_session: true}
+
+00:59:21.907 [debug] [MCP message] incoming response: id=req_GJ-q-FiaVcDYSn50wlM= success
+
+00:59:21.907 [debug] [MCP message] incoming response data: %{"id" => "req_GJ-q-FiaVcDYSn50wlM=", "jsonrpc" => "2.0", "result" => %{"content" => [%{"text" => "too late", "type" => "text"}], "isError" => false}}
+
+00:59:21.907 [debug] MCP client event: success_response
+
+00:59:21.907 [debug] MCP event details: %{id: "req_GJ-q-FiaVcDYSn50wlM=", method: "tools/call"}
+.
+00:59:22.000 [debug] QUERY OK db=7.4ms decode=2.9ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.002 [debug] QUERY OK db=1.9ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.002 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.003 [debug] QUERY OK db=0.8ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.018 [debug] QUERY OK source="messages" db=0.1ms queue=0.3ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.018 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.086 [debug] QUERY OK source="sessions" db=0.4ms queue=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-2507", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "51f9ecaf-fa3f-4961-bbe6-34da789b516c"]
+
+00:59:22.086 [debug] QUERY OK source="messages" db=0.2ms queue=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "51f9ecaf-fa3f-4961-bbe6-34da789b516c", "fixture message", 12, ~N[2026-03-24 03:59:22], "1a0a90a5-76a5-47f8-8134-10048c089692"]
+
+00:59:22.087 [debug] QUERY OK source="sessions" db=0.2ms queue=0.1ms
+DELETE FROM "sessions" WHERE "id" = ? ["51f9ecaf-fa3f-4961-bbe6-34da789b516c"]
+
+00:59:22.095 [debug] QUERY OK source="sessions" db=0.0ms queue=0.2ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["51f9ecaf-fa3f-4961-bbe6-34da789b516c"]
+
+00:59:22.104 [debug] QUERY OK source="messages" db=0.2ms queue=0.5ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."id" = ?) ["1a0a90a5-76a5-47f8-8134-10048c089692"]
+.
+00:59:22.105 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.105 [debug] QUERY OK source="sessions" db=0.2ms
+DELETE FROM "sessions" AS s0 []
+.
+00:59:22.106 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.106 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.106 [debug] QUERY OK source="sessions" db=0.2ms queue=0.1ms
+INSERT INTO "sessions" ("metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) [%{"locale" => "en"}, "openai", "gpt-4o-mini", "telegram", "user-123", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "95f988d4-9499-40ff-821e-7a67a15bcead"]
+.
+00:59:22.106 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.106 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.106 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-3141", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "497137d1-4163-441a-9a65-afce53a5baaa"]
+
+00:59:22.106 [debug] QUERY OK source="messages" db=0.2ms queue=0.1ms
+INSERT INTO "messages" ("role","session_id","tool_calls","content","tool_call_id","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8) ["assistant", "497137d1-4163-441a-9a65-afce53a5baaa", %{"name" => "search"}, "Hello from the assistant", "tool-1", 42, ~N[2026-03-24 03:59:22], "033474a2-92cd-40a4-9829-51c45bb77d46"]
+.
+00:59:22.106 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.106 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.106 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "user-a", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "3571cda6-7d63-4861-9905-14e073613a91"]
+
+00:59:22.106 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "user-b", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "f8b4d463-8460-4545-a739-42ef238a1eb6"]
+
+00:59:22.106 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "3571cda6-7d63-4861-9905-14e073613a91", "first", 12, ~N[2026-03-24 03:59:22], "fbb9e124-9056-405b-9823-e7b7143012c5"]
+
+00:59:22.106 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "3571cda6-7d63-4861-9905-14e073613a91", "second", 12, ~N[2026-03-24 03:59:22], "f7738c16-42aa-4a13-bf9f-22d8f16c11e2"]
+
+00:59:22.106 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "f8b4d463-8460-4545-a739-42ef238a1eb6", "third", 12, ~N[2026-03-24 03:59:22], "02fd9d1e-0655-4c2c-806e-c9dc1eff34f7"]
+
+00:59:22.106 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at" ["3571cda6-7d63-4861-9905-14e073613a91"]
+.
+00:59:22.114 [debug] QUERY OK source="messages" db=0.2ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.114 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.114 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-904", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "9798f9e5-85c1-4213-9eab-00028d3ddb1b"]
+.
+00:59:22.114 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.114 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.114 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-2699", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "d87fc745-6553-4bc1-a2c3-f5f6eff1fabd"]
+
+00:59:22.114 [debug] QUERY OK source="sessions" db=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [150, 275, ~N[2026-03-24 03:59:22], "d87fc745-6553-4bc1-a2c3-f5f6eff1fabd"]
+
+00:59:22.114 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["d87fc745-6553-4bc1-a2c3-f5f6eff1fabd"]
+.........
+00:59:22.139 [warning] Copilot BYOK base_url uses insecure HTTP: http://localhost:58698/custom/v1
+.
+00:59:22.139 [warning] Copilot BYOK base_url uses insecure HTTP: http://localhost:58700/custom/v1
+..
+00:59:22.155 [debug] QUERY OK db=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.155 [debug] QUERY OK db=0.2ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.155 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.155 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.155 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.155 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.166 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-968", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "a9ac1e20-d335-4242-afff-cfd3c251b7b6"]
+
+00:59:22.166 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "a9ac1e20-d335-4242-afff-cfd3c251b7b6", "aaaaaaaaaaaaaaaa", 4, ~N[2026-03-24 03:59:22], "296fc313-875a-41d1-bc79-8cc7bd9b91aa"]
+
+00:59:22.166 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "a9ac1e20-d335-4242-afff-cfd3c251b7b6", "bbbbbbbbbbbb", 3, ~N[2026-03-24 03:59:22], "4e28312e-a3d8-4c70-ad74-80ec337c3d4d"]
+
+00:59:22.171 [debug] QUERY OK source="messages" db=0.1ms queue=0.2ms
+SELECT sum(m0."token_count") FROM "messages" AS m0 WHERE (m0."session_id" = ?) ["a9ac1e20-d335-4242-afff-cfd3c251b7b6"]
+.
+00:59:22.171 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.171 [debug] QUERY OK source="sessions" db=0.2ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.171 [debug] QUERY OK source="sessions" db=0.2ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-771", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "652719f8-dd4c-451c-92c3-0a803214aaed"]
+
+00:59:22.173 [debug] QUERY OK source="messages" db=0.6ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "652719f8-dd4c-451c-92c3-0a803214aaed", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" <> ..., 2457, ~N[2026-03-24 03:59:22], "8f497fae-a788-45a3-8d48-b5bcdab4be12"]
+
+00:59:22.173 [debug] QUERY OK source="messages" db=0.3ms
+SELECT sum(m0."token_count") FROM "messages" AS m0 WHERE (m0."session_id" = ?) ["652719f8-dd4c-451c-92c3-0a803214aaed"]
+.
+00:59:22.173 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.173 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.173 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-3269", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "ef3e7786-a90f-49fb-b383-25975816bb64"]
+
+00:59:22.173 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "ef3e7786-a90f-49fb-b383-25975816bb64", "aaaaaaaaaaaaaaaaaaaaaaaa", 6, ~N[2026-03-24 03:59:22], "cbcf0d31-3833-4763-be99-c23fa4669b42"]
+
+00:59:22.173 [debug] QUERY OK source="messages" db=0.0ms
+SELECT sum(m0."token_count") FROM "messages" AS m0 WHERE (m0."session_id" = ?) ["ef3e7786-a90f-49fb-b383-25975816bb64"]
+.
+00:59:22.173 [debug] QUERY OK source="messages" db=0.0ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.173 [debug] QUERY OK source="sessions" db=0.0ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.173 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-3083", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "411647e5-eae5-46c1-ab30-ec08175c5ab3"]
+
+00:59:22.173 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "411647e5-eae5-46c1-ab30-ec08175c5ab3", "Hello there", 20, ~N[2026-03-24 03:59:22], "da71ab55-327e-4e1b-a5d5-29739fb62145"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.1ms queue=0.2ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "411647e5-eae5-46c1-ab30-ec08175c5ab3", "General Kenobi", 20, ~N[2026-03-24 03:59:22], "3096f240-e013-41d5-9076-701a29055611"]
+
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["411647e5-eae5-46c1-ab30-ec08175c5ab3"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+SELECT sum(m0."token_count") FROM "messages" AS m0 WHERE (m0."session_id" = ?) ["411647e5-eae5-46c1-ab30-ec08175c5ab3"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["411647e5-eae5-46c1-ab30-ec08175c5ab3"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.2ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-3211", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "ea11093e-3b2c-4bc9-8568-62f06266abef"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.2ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "ea11093e-3b2c-4bc9-8568-62f06266abef", "short", 1, ~N[2026-03-24 03:59:22], "80cf2736-03b5-4c5f-b4f9-cc0edc8a96b0"]
+
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.2ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["ea11093e-3b2c-4bc9-8568-62f06266abef"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+SELECT sum(m0."token_count") FROM "messages" AS m0 WHERE (m0."session_id" = ?) ["ea11093e-3b2c-4bc9-8568-62f06266abef"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["ea11093e-3b2c-4bc9-8568-62f06266abef"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-3333", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22], "95c6c04d-c308-4c2f-8430-ef53f3e21f79"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "95c6c04d-c308-4c2f-8430-ef53f3e21f79", "Hello there", 20, ~N[2026-03-24 03:59:22], "ecfe95bb-536f-4e6b-98ce-78bfffc243ea"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.2ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "95c6c04d-c308-4c2f-8430-ef53f3e21f79", "General Kenobi", 20, ~N[2026-03-24 03:59:22], "8356cb36-7f0b-4751-974a-24a93dff0082"]
+
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["95c6c04d-c308-4c2f-8430-ef53f3e21f79"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.1ms
+SELECT sum(m0."token_count") FROM "messages" AS m0 WHERE (m0."session_id" = ?) ["95c6c04d-c308-4c2f-8430-ef53f3e21f79"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["95c6c04d-c308-4c2f-8430-ef53f3e21f79"]
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["95c6c04d-c308-4c2f-8430-ef53f3e21f79"]
+
+00:59:22.187 [debug] QUERY OK db=0.0ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.187 [debug] QUERY OK db=0.3ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.187 [debug] QUERY OK db=0.5ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.187 [debug] QUERY OK db=0.2ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.187 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+
+
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.2ms
+DELETE FROM "sessions" AS s0 []
+  1) test consolidate/2 summarizes the conversation, deletes old messages, and inserts a system summary (ElixirClaw.Agent.MemoryTest)
+     test/elixir_claw/agent/memory_test.exs:87
+     match (=) failed
+     code:  assert [
+              %{
+                role: "user",
+                content: "Summarize this conversation:\nuser: Hello there\nassistant: General Kenobi"
+              }
+            ] = messages
+     left:  [
+              %{
+                role: "user",
+                content: "Summarize this conversation:\nuser: Hello there\nassistant: General Kenobi"
+              }
+            ]
+     right: [
+              %{
+                role: "user",
+                content: "Summarize this conversation:\nassistant: General Kenobi\nuser: Hello there"
+              }
+            ]
+     stacktrace:
+       test/elixir_claw/agent/memory_test.exs:99: anonymous fn/2 in ElixirClaw.Agent.MemoryTest."test consolidate/2 summarizes the conversation, deletes old messages, and inserts a system summary"/1
+       (elixir_claw 0.1.0) lib/elixir_claw/agent/memory.ex:45: ElixirClaw.Agent.Memory.summarize/2
+       (elixir_claw 0.1.0) lib/elixir_claw/agent/memory.ex:22: ElixirClaw.Agent.Memory.consolidate/3
+       test/elixir_claw/agent/memory_test.exs:111: (test)
+
+..
+00:59:22.187 [debug] QUERY OK source="sessions" db=0.1ms queue=0.2ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["064ca3d2-b6f2-47c0-82f2-94c292f128e7", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "loop-tool", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.206 [debug] QUERY OK source="messages" db=0.2ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["064ca3d2-b6f2-47c0-82f2-94c292f128e7"]
+
+00:59:22.206 [info] Session 064ca3d2-b6f2-47c0-82f2-94c292f128e7: 5 in / 3 out tokens
+
+00:59:22.206 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["064ca3d2-b6f2-47c0-82f2-94c292f128e7"]
+
+00:59:22.206 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [5, 3, ~N[2026-03-24 03:59:22], "064ca3d2-b6f2-47c0-82f2-94c292f128e7"]
+
+00:59:22.206 [info] Session 064ca3d2-b6f2-47c0-82f2-94c292f128e7: 2 in / 4 out tokens
+
+00:59:22.206 [debug] QUERY OK source="sessions" db=0.0ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["064ca3d2-b6f2-47c0-82f2-94c292f128e7"]
+
+00:59:22.206 [debug] QUERY OK source="sessions" db=0.0ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [7, 7, ~N[2026-03-24 03:59:22], "064ca3d2-b6f2-47c0-82f2-94c292f128e7"]
+
+00:59:22.211 [debug] QUERY OK source="messages" db=0.2ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "064ca3d2-b6f2-47c0-82f2-94c292f128e7", "Run the tool", 3, ~N[2026-03-24 03:59:22], "6c08e903-9881-4879-a2e8-c8fa0a36b4a4"]
+
+00:59:22.211 [debug] QUERY OK source="messages" db=0.2ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "064ca3d2-b6f2-47c0-82f2-94c292f128e7", "Tool complete", 3, ~N[2026-03-24 03:59:22], "476c1c8b-1ad9-4ec3-ab5c-02977e109457"]
+
+00:59:22.211 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["064ca3d2-b6f2-47c0-82f2-94c292f128e7"]
+
+00:59:22.211 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["064ca3d2-b6f2-47c0-82f2-94c292f128e7"]
+.
+00:59:22.211 [debug] QUERY OK db=0.0ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.211 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.213 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.213 [debug] QUERY OK db=0.2ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["78038d51-009e-4596-a9ff-42c38f7b3ba0", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "loop-success", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "78038d51-009e-4596-a9ff-42c38f7b3ba0", "Earlier answer", 3, ~N[2026-03-24 03:59:22], "e536dea9-d33e-4262-9536-cee20609b562"]
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["78038d51-009e-4596-a9ff-42c38f7b3ba0"]
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["78038d51-009e-4596-a9ff-42c38f7b3ba0"]
+.
+00:59:22.213 [debug] QUERY OK db=0.0ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.213 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.213 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.213 [debug] QUERY OK db=0.2ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["f03ddb0b-482d-4af8-9e78-a05f39131f36", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "loop-max", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["f03ddb0b-482d-4af8-9e78-a05f39131f36"]
+
+00:59:22.213 [info] Session f03ddb0b-482d-4af8-9e78-a05f39131f36: 1 in / 1 out tokens
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["f03ddb0b-482d-4af8-9e78-a05f39131f36"]
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.0ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [1, 1, ~N[2026-03-24 03:59:22], "f03ddb0b-482d-4af8-9e78-a05f39131f36"]
+
+00:59:22.213 [info] Session f03ddb0b-482d-4af8-9e78-a05f39131f36: 1 in / 1 out tokens
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["f03ddb0b-482d-4af8-9e78-a05f39131f36"]
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [2, 2, ~N[2026-03-24 03:59:22], "f03ddb0b-482d-4af8-9e78-a05f39131f36"]
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "f03ddb0b-482d-4af8-9e78-a05f39131f36", "Keep calling tools", 4, ~N[2026-03-24 03:59:22], "ecca11cb-75a3-4204-9b27-0c23c797d5d4"]
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.0ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "f03ddb0b-482d-4af8-9e78-a05f39131f36", "Tool call limit reached.", 6, ~N[2026-03-24 03:59:22], "b471850e-e23e-4522-95b7-9bf036d41c13"]
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["f03ddb0b-482d-4af8-9e78-a05f39131f36"]
+.
+00:59:22.213 [debug] QUERY OK db=0.0ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.213 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.213 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.213 [debug] QUERY OK db=0.0ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.213 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["f47c7792-c681-45d9-b645-a3bfbedd16fb", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "loop-error", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["f47c7792-c681-45d9-b645-a3bfbedd16fb"]
+
+00:59:22.213 [warning] Provider call failed for session f47c7792-c681-45d9-b645-a3bfbedd16fb: :upstream_timeout
+
+00:59:22.213 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "f47c7792-c681-45d9-b645-a3bfbedd16fb", "Hello", 1, ~N[2026-03-24 03:59:22], "eea7bd03-778a-4634-ba6d-1e00cffdf399"]
+
+00:59:22.335 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["f47c7792-c681-45d9-b645-a3bfbedd16fb"]
+
+00:59:22.335 [debug] QUERY OK source="sessions" db=0.2ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["f47c7792-c681-45d9-b645-a3bfbedd16fb"]
+........
+00:59:22.351 [debug] QUERY OK db=0.0ms decode=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.351 [debug] QUERY OK db=0.3ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.351 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.365 [debug] QUERY OK db=0.3ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.365 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.365 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.365 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["7ca2c03a-e710-4322-9c81-fe3860393cfd", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "crash-a", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.365 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["bc4183f7-a348-4fa9-815f-b59e172a15de", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "crash-b", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.367 [debug] QUERY OK source="sessions" db=0.2ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["bc4183f7-a348-4fa9-815f-b59e172a15de"]
+
+00:59:22.367 [debug] QUERY OK source="sessions" db=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [5, 8, ~N[2026-03-24 03:59:22], "bc4183f7-a348-4fa9-815f-b59e172a15de"]
+
+00:59:22.367 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["bc4183f7-a348-4fa9-815f-b59e172a15de"]
+.
+00:59:22.367 [debug] QUERY OK db=0.0ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.367 [debug] QUERY OK db=0.2ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.367 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.367 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.367 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.367 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+.
+00:59:22.367 [debug] QUERY OK db=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.367 [debug] QUERY OK db=0.3ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.370 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.370 [debug] QUERY OK db=0.2ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.370 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.370 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.370 [debug] QUERY OK source="sessions" db=0.1ms queue=0.2ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["31a60efe-3520-490c-ae0e-cdec2937bb77", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "start-user", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+.
+00:59:22.372 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["31a60efe-3520-490c-ae0e-cdec2937bb77"]
+
+00:59:22.372 [debug] QUERY OK db=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.372 [debug] QUERY OK db=0.3ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.372 [debug] QUERY OK db=0.2ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.372 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.372 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.372 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.372 [debug] QUERY OK source="sessions" db=0.2ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["fbdb9e7a-56d8-4677-a59f-9e3470fabfad", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "list-a", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.372 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["c99aed28-cdea-44e4-b00f-7ac38ab12d40", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "list-b", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+.
+00:59:22.372 [debug] QUERY OK db=0.0ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.372 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.372 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.372 [debug] QUERY OK db=0.0ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.372 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.372 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.0ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["db0a7856-e4e1-46f3-9a19-3a215930f37c", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "token-user", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["db0a7856-e4e1-46f3-9a19-3a215930f37c"]
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [10, 20, ~N[2026-03-24 03:59:22], "db0a7856-e4e1-46f3-9a19-3a215930f37c"]
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["db0a7856-e4e1-46f3-9a19-3a215930f37c"]
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.2ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [13, 27, ~N[2026-03-24 03:59:22], "db0a7856-e4e1-46f3-9a19-3a215930f37c"]
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["db0a7856-e4e1-46f3-9a19-3a215930f37c"]
+.
+00:59:22.377 [debug] QUERY OK db=0.0ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.377 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.377 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.377 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.377 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.0ms decode=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["ef2e1753-c206-488b-927f-1604d236681c", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "end-user", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["ef2e1753-c206-488b-927f-1604d236681c"]
+
+00:59:22.377 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["ef2e1753-c206-488b-927f-1604d236681c"]
+.
+00:59:22.382 [debug] QUERY OK db=0.1ms
+PRAGMA foreign_keys = ON []
+
+00:59:22.382 [debug] QUERY OK db=0.3ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+00:59:22.382 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+00:59:22.382 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+00:59:22.382 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+00:59:22.382 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+00:59:22.382 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["9323c19e-98b1-40b0-9f33-35e8d2f089b6", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "rate-user", 0, 0, ~N[2026-03-24 03:59:22], ~N[2026-03-24 03:59:22]]
+
+00:59:22.382 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["9323c19e-98b1-40b0-9f33-35e8d2f089b6"]
+
+00:59:22.382 [debug] QUERY OK source="sessions" db=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [1, 1, ~N[2026-03-24 03:59:22], "9323c19e-98b1-40b0-9f33-35e8d2f089b6"]
+
+00:59:22.382 [debug] QUERY OK source="sessions" db=0.0ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["9323c19e-98b1-40b0-9f33-35e8d2f089b6"]
+
+00:59:22.382 [debug] QUERY OK source="sessions" db=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [2, 2, ~N[2026-03-24 03:59:22], "9323c19e-98b1-40b0-9f33-35e8d2f089b6"]
+
+00:59:22.382 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["9323c19e-98b1-40b0-9f33-35e8d2f089b6"]
+.
+Finished in 2.0 seconds (0.6s async, 1.4s sync)
+1 doctest, 180 tests, 1 failure

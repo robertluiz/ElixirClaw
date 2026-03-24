@@ -121,6 +121,10 @@
 - For this repo's SQLite in-memory tests, `setup_all` with shared sandbox ownership plus explicit table creation keeps new Ecto-backed test files deterministic without introducing a separate DataCase helper.
 - Ordering by `inserted_at` alone is not stable for same-timestamp fixture rows; adding `id` as a tiebreaker or sorting assertions avoids flaky message-history tests.
 
+## Task 19 Learnings
+- Skill trigger matching can stay safe by lowercasing the incoming message, treating plain-string triggers as substring checks, and mapping regex flags manually for `:re` instead of converting user-controlled strings into atoms.
+- Budget-aware skill composition is easiest when it resolves dependency bundles first, includes dependencies before dependents in the composed content, and skips the whole bundle when the remaining budget cannot accommodate all required skills.
+
 ## Task 21 Learnings
 - Port-based MCP tests stay hermetic if the client injects `:port_open_fn`, `:send_fn`, and `:port_close_fn`; then raw `{port, {:data, {:eol, line}}}` and `{port, {:exit_status, status}}` tuples can be simulated without launching a real child process.
 - Resolving trusted commands before `GenServer.start_link/3` keeps `start_link/1` failures clean (`{:error, :command_not_found}`) while still allowing Windows-safe `{:spawn_executable, path}` usage and optional `cmd.exe /c` wrapping for `.cmd`/`.bat` scripts.
