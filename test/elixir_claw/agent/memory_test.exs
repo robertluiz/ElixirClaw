@@ -88,6 +88,7 @@ defmodule ElixirClaw.Agent.MemoryTest do
       session = Factory.insert_session!()
 
       first = Factory.insert_message!(session_id: session.id, role: "user", content: "Hello there", token_count: 20)
+      Process.sleep(2)
       second = Factory.insert_message!(session_id: session.id, role: "assistant", content: "General Kenobi", token_count: 20)
 
       summary = "User greeted the assistant and received a Star Wars reply."
