@@ -134,6 +134,11 @@
 - Resolving trusted commands before `GenServer.start_link/3` keeps `start_link/1` failures clean (`{:error, :command_not_found}`) while still allowing Windows-safe `{:spawn_executable, path}` usage and optional `cmd.exe /c` wrapping for `.cmd`/`.bat` scripts.
 - Tracking pending JSON-RPC calls as `id => {from, timer_ref, request_type}` makes timeout cleanup, response correlation, and bulk failure on port exit straightforward without mixing protocol parsing into the public API layer.
 
+## Task 25 Learnings
+- For channel processes that call Mox-backed dependencies from inside a GenServer, allowing the mock modules to the server process during `init/1` keeps tests isolated without switching Mox into global mode.
+- A Discord channel can stay gateway-free in tests by treating `Nostrum.Consumer.handle_event/1` as a thin event forwarder and injecting only the outbound API wrapper; fake `{:MESSAGE_CREATE, message, %{pid: server_pid}}` tuples are enough to exercise behaviour.
+- Discord's 2000-character limit is simplest to enforce at the channel boundary with chunked `create_message/2` calls keyed off a stored session-to-channel route map.
+
 ## Task 22 Learnings
 - MCP tool registration fits the existing registry cleanly if the registry stores either classic tool modules or `%ElixirClaw.MCP.ToolWrapper{}` structs and dispatches metadata/execution through small helper functions instead of forcing dynamic module generation.
 - For Mox-based MCP wrapper tests, injecting the HTTP/stdio client modules through application env keeps the wrapper production-safe while letting supervised `ToolRegistry.execute/4` tasks hit global Mox expectations without changing the public wrapper API.

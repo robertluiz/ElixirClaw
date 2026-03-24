@@ -1,0 +1,37 @@
+Task 25 — Discord channel via nostrum
+
+Files changed:
+- lib/elixir_claw/channels/discord.ex
+- test/elixir_claw/channels/discord_test.exs
+- test/support/mocks.ex
+
+Implemented:
+- ElixirClaw.Channels.Discord as a GenServer implementing ElixirClaw.Channel and Nostrum.Consumer callbacks
+- Incoming sanitization for <|, |>, [INST], <<SYS>> markers with whitespace normalization
+- DM handling plus !help / !new text commands
+- Bot/self-message ignore logic
+- Session mapping for {user_id, channel_id} -> session_id and reverse route lookup
+- Outgoing Discord send via injected API wrapper with 2000-char chunk splitting
+- PubSub session-topic delivery handling
+- Test-only Mox allowances so no real Discord gateway/token is required
+
+Verification:
+1) Failing test first
+   - mix test test/elixir_claw/channels/discord_test.exs
+   - Initial failure: missing Discord behaviour/mock implementation
+
+2) Targeted test pass after implementation
+   - Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat clean && C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/channels/discord_test.exs
+   - Result: 11 tests, 0 failures
+
+3) Full suite pass
+   - Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test
+   - Result: 1 doctest, 223 tests, 0 failures
+
+4) Diagnostics
+   - Attempted lsp_diagnostics on changed .ex/.exs files
+   - Result: unavailable in environment because elixir-ls is not installed
+
+Notes:
+- Nostrum remains runtime: false; tests mock Discord API calls and never start a real gateway.
+- Bot token is never logged or required by the test suite.
