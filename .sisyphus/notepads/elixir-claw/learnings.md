@@ -55,3 +55,17 @@
 - Per-session processes fit cleanly as `DynamicSupervisor` children registered through `{:via, Registry, {ElixirClaw.SessionRegistry, session_id}}`, keeping lookup cheap without a global GenServer bottleneck.
 - Sandbox-owned worker processes should be allowed at `init/1`; test cleanup should terminate session workers directly instead of calling persistence-heavy APIs after the owning test process exits.
 - With `System.monotonic_time(:second)`, rate limiting is easiest as a rolling timestamp window pruned on each `record_call/2`, while accumulated token totals stay authoritative in both worker state and the persisted session row.
+
+## Task 8 Learnings
+- `Phoenix.PubSub` fits the channel↔orchestrator boundary cleanly as a supervised bus child, avoiding a single mailbox bottleneck while keeping fan-out semantics trivial to test.
+- Recursive payload sanitization needs an explicit `token_count` carve-out; otherwise a broad `/token/i` secret filter strips useful stream usage metadata along with actual secrets.
+
+## Task 9 Learnings
+- Context window assembly is simplest when system prompt, capped skills, and sanitized latest user input are treated as mandatory reservations before allocating any history budget.
+- To preserve newest context under a hard token cap while still signaling truncation, select history newest-first, then evict the oldest retained history message as needed to make room for a single `[Earlier conversation summarized]` system marker.
+- Existing `%Message{token_count: ...}` values are not reliable for prompt budgeting in tests; recomputing token heuristics from `content` keeps `estimate_tokens/1`, built context metadata, and trimming behavior consistent.
+
+## Task 10 Learnings
+- A dedicated `Task.Supervisor` is the clean OTP boundary for tool sandboxing: `Task.Supervisor.async_nolink/2` plus `Task.yield/2 || Task.shutdown/2` gives timeout enforcement without crashing the registry caller.
+- Keeping tool names as strings in registry state avoids unsafe atom conversion while making provider tool specs and lookup keys line up with JSON function-calling payloads.
+- Mox-based tool tests that execute in supervised task processes need global mode (or explicit allowances), otherwise expectations set in the test process are not visible inside sandboxed tool tasks.

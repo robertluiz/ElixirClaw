@@ -11,6 +11,7 @@ defmodule ElixirClaw.Application do
       ElixirClaw.Repo,
       {Phoenix.PubSub, name: ElixirClaw.PubSub},
       {Registry, keys: :unique, name: ElixirClaw.SessionRegistry},
+      {Task.Supervisor, name: ElixirClaw.ToolSupervisor},
       {DynamicSupervisor, strategy: :one_for_one, name: ElixirClaw.SessionSupervisor}
       # Starts a worker by calling: ElixirClaw.Worker.start_link(arg)
       # {ElixirClaw.Worker, arg}
