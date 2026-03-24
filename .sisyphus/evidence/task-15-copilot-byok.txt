@@ -1,0 +1,44 @@
+Task 15 - Copilot BYOK provider evidence
+Date: 2026-03-23
+
+Changed files:
+- lib/elixir_claw/providers/copilot_byok.ex
+- test/elixir_claw/providers/copilot_byok_test.exs
+
+LSP diagnostics:
+- elixir-ls unavailable in environment (`elixir-ls` not installed), so diagnostics could not run.
+
+Command:
+  C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/providers/copilot_byok_test.exs
+Output (red phase):
+  Running ExUnit with seed: 793307, max_cases: 24
+  7 tests, 7 failures
+  Failure reason: `ElixirClaw.Providers.CopilotBYOK` was undefined before implementation.
+
+Command:
+  C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/providers/copilot_byok_test.exs
+Output (green phase):
+  Compiling 1 file (.ex)
+  Generated elixir_claw app
+  Running ExUnit with seed: 111665, max_cases: 24
+  Finished in 0.4 seconds (0.00s async, 0.4s sync)
+  7 tests, 0 failures
+
+Command:
+  C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat compile --warnings-as-errors
+Output:
+  Compiling 1 file (.ex)
+  Generated elixir_claw app
+
+Command:
+  C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test
+Output summary:
+  Running ExUnit with seed: 60051, max_cases: 24
+  Finished in 1.1 seconds (0.5s async, 0.6s sync)
+  1 doctest, 121 tests, 0 failures
+
+Implementation notes:
+- Provider is a thin OpenAI-compatible adapter using `ElixirClaw.Providers.OpenAICompat` for message formatting, tool call parsing, and token usage parsing.
+- `base_url` is configurable and normalized to `/chat/completions` when needed.
+- Insecure `http://` base URLs emit `Logger.warning/1` but requests still proceed.
+- Logs never include the API key because request/response bodies are not logged.

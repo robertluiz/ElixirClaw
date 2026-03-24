@@ -90,3 +90,8 @@
 - OpenRouter can stay nearly identical to the OpenAI provider by only swapping the endpoint, adding `HTTP-Referer`/`X-Title` headers, mapping `429` to `:rate_limited`, and optionally forwarding configured `transforms`.
 - When OpenRouter config may be a root endpoint or a version root, normalizing `base_url` by appending `/chat/completions` only when needed keeps both default and Bypass test URLs working.
 - The repo's full `mix test` is currently blocked by pre-existing `ElixirClaw.Providers.AnthropicTest` failures because `ElixirClaw.Providers.Anthropic` is not implemented yet; OpenRouter-targeted tests and compile are green.
+
+## Task 15 Learnings
+- Copilot BYOK fits the same thin-wrapper pattern as other OpenAI-compatible providers: keep HTTP wiring local, and reuse `OpenAICompat` for message formatting, tool call parsing, and OpenAI-style token usage parsing.
+- Treating `base_url` as either a version root or a full chat-completions endpoint avoids hardcoding a single vendor URL while keeping Bypass tests easy to write.
+- Logging only an insecure-HTTP warning for `http://` endpoints satisfies security visibility without leaking API keys or request payloads.
