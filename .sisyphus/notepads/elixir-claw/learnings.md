@@ -75,3 +75,18 @@
 - `Session.Manager.get_session/1` returns session metadata/state but not persisted history updates, so the orchestration layer must hydrate conversation history from `messages` in Ecto before calling `ContextBuilder.build_context/3`.
 - The default orchestration path needs a supervised `ElixirClaw.Tools.Registry`; otherwise `ToolRegistry.to_provider_format/0` and `execute/3` have no default server to talk to outside isolated tests.
 - In this project, `function_exported?/3` on Mox-generated mocks can be flaky unless the mock modules are eagerly loaded; `Code.ensure_loaded?/1` at app startup keeps the existing behaviour tests stable.
+
+## Task 12 Learnings
+- There was no Context7 entry for `req_llm`, so the practical fallback was Req docs plus source-level librarian notes; `Req.post(..., into: :self)` is enough to expose a lazy `Req.Response.Async` enumerable for SSE parsing.
+- Bypass chunked SSE tests are stable when each `Plug.Conn.chunk/2` result is matched and the handler returns the final `conn`, not `{:ok, conn}`.
+- Keeping OpenAI-compatible parsing in a small `OpenAICompat` module makes `tool_calls`, token usage, and message formatting reusable for future OpenRouter/Copilot BYOK adapters without sharing HTTP concerns.
+
+## Task 13 Learnings
+- Anthropic Messages API needs `system` lifted to a top-level field, `x-api-key` auth, and `anthropic-version` headers; replayed tool outputs must be sent back as a `user` message containing `tool_result` blocks instead of a `tool` role.
+- Anthropic token usage is provider-specific (`input_tokens` / `output_tokens`), so reuse of OpenAI helpers should stop at generic message/tool formatting ideas rather than usage parsing.
+- Anthropic SSE handling is easiest with event-aware state: capture `message_start` input tokens, emit text on `content_block_delta` text deltas, accumulate streamed tool JSON across `input_json_delta` chunks, and emit the final usage/finish-reason chunk from `message_delta`.
+
+## Task 14 Learnings
+- OpenRouter can stay nearly identical to the OpenAI provider by only swapping the endpoint, adding `HTTP-Referer`/`X-Title` headers, mapping `429` to `:rate_limited`, and optionally forwarding configured `transforms`.
+- When OpenRouter config may be a root endpoint or a version root, normalizing `base_url` by appending `/chat/completions` only when needed keeps both default and Bypass test URLs working.
+- The repo's full `mix test` is currently blocked by pre-existing `ElixirClaw.Providers.AnthropicTest` failures because `ElixirClaw.Providers.Anthropic` is not implemented yet; OpenRouter-targeted tests and compile are green.

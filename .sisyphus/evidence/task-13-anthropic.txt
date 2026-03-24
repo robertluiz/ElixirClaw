@@ -1,0 +1,761 @@
+Running ExUnit with seed: 776747, max_cases: 24
+
+.................................................................
+23:20:40.400 [error] Task #PID<0.525.0> started from #PID<0.522.0> terminating
+** (RuntimeError) boom
+    test/elixir_claw/tools/registry_test.exs:121: anonymous fn/2 in ElixirClaw.Tools.RegistryTest."test execute/4 catches tool exceptions and returns an error tuple"/1
+    (elixir 1.19.5) lib/task/supervised.ex:105: Task.Supervised.invoke_mfa/2
+    (elixir 1.19.5) lib/task/supervised.ex:40: Task.Supervised.reply/4
+Function: #Function<0.48468053/0 in ElixirClaw.Tools.Registry.execute/4>
+    Args: []
+................................
+23:20:40.770 [debug] QUERY OK db=5.2ms decode=2.4ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.770 [debug] QUERY OK db=0.3ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.770 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.770 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.786 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.786 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.835 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["b0c284d0-85f2-4430-a242-86e2a4987ea9", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "start-user", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.838 [debug] QUERY OK source="sessions" db=0.1ms queue=0.2ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["b0c284d0-85f2-4430-a242-86e2a4987ea9"]
+.
+23:20:40.853 [debug] QUERY OK db=0.1ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.854 [debug] QUERY OK db=0.3ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.854 [debug] QUERY OK db=0.5ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.854 [debug] QUERY OK db=0.2ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.854 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+.
+23:20:40.854 [debug] QUERY OK db=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.854 [debug] QUERY OK db=0.3ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.854 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.854 [debug] QUERY OK db=0.0ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.854 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.0ms decode=0.1ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["a00e71ad-1b52-41ae-94d3-d0ce6c8af67b", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "rate-user", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.2ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["a00e71ad-1b52-41ae-94d3-d0ce6c8af67b"]
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [1, 1, ~N[2026-03-24 02:20:40], "a00e71ad-1b52-41ae-94d3-d0ce6c8af67b"]
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["a00e71ad-1b52-41ae-94d3-d0ce6c8af67b"]
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [2, 2, ~N[2026-03-24 02:20:40], "a00e71ad-1b52-41ae-94d3-d0ce6c8af67b"]
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["a00e71ad-1b52-41ae-94d3-d0ce6c8af67b"]
+.
+23:20:40.854 [debug] QUERY OK db=0.0ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.854 [debug] QUERY OK db=0.2ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.854 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.854 [debug] QUERY OK db=0.0ms decode=0.1ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.854 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.854 [debug] QUERY OK source="sessions" db=0.2ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.862 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["2e2b2d4a-8cac-49ff-96b1-9b6830eb8b8a", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "crash-a", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.862 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["46fd12e1-1904-42d8-9b70-b62019f3e909", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "crash-b", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.862 [debug] QUERY OK source="sessions" db=0.2ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["46fd12e1-1904-42d8-9b70-b62019f3e909"]
+
+23:20:40.864 [debug] QUERY OK source="sessions" db=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [5, 8, ~N[2026-03-24 02:20:40], "46fd12e1-1904-42d8-9b70-b62019f3e909"]
+
+23:20:40.864 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["46fd12e1-1904-42d8-9b70-b62019f3e909"]
+.
+23:20:40.864 [debug] QUERY OK db=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.866 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.866 [debug] QUERY OK db=0.1ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.866 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.866 [debug] QUERY OK source="messages" db=0.0ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.866 [debug] QUERY OK source="sessions" db=0.0ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.867 [debug] QUERY OK source="sessions" db=0.0ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["0897b35c-3771-4327-bf50-fc1a0ef6a021", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "end-user", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.867 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["0897b35c-3771-4327-bf50-fc1a0ef6a021"]
+
+23:20:40.867 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["0897b35c-3771-4327-bf50-fc1a0ef6a021"]
+.
+23:20:40.867 [debug] QUERY OK db=0.0ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.868 [debug] QUERY OK db=0.1ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.868 [debug] QUERY OK db=0.3ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.868 [debug] QUERY OK db=0.0ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.868 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.868 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.869 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["dac693ef-3bb3-4764-8a1c-d8580ccd80ec", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "list-a", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.869 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["23aac52c-b6d2-41cb-b03e-091bb4349124", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "list-b", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+.
+23:20:40.869 [debug] QUERY OK db=0.0ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.870 [debug] QUERY OK db=0.1ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.870 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.870 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.870 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.870 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.870 [debug] QUERY OK source="sessions" db=0.0ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["8d7f478e-f953-4db6-8fff-9c24c2f43082", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "token-user", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.870 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["8d7f478e-f953-4db6-8fff-9c24c2f43082"]
+
+23:20:40.871 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [10, 20, ~N[2026-03-24 02:20:40], "8d7f478e-f953-4db6-8fff-9c24c2f43082"]
+
+23:20:40.871 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["8d7f478e-f953-4db6-8fff-9c24c2f43082"]
+
+23:20:40.871 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [13, 27, ~N[2026-03-24 02:20:40], "8d7f478e-f953-4db6-8fff-9c24c2f43082"]
+
+23:20:40.871 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["8d7f478e-f953-4db6-8fff-9c24c2f43082"]
+.
+23:20:40.873 [debug] QUERY OK db=0.0ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.873 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.873 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.873 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) [%{"locale" => "en"}, "openai", "gpt-4o-mini", "telegram", "user-123", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40], "b07448eb-4178-45a6-ba79-ceb769f9c8b3"]
+.
+23:20:40.873 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+.
+23:20:40.873 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-456", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40], "7b4959f0-2934-43ba-a7c3-633bd297652d"]
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [150, 275, ~N[2026-03-24 02:20:40], "7b4959f0-2934-43ba-a7c3-633bd297652d"]
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["7b4959f0-2934-43ba-a7c3-633bd297652d"]
+.
+23:20:40.873 [debug] QUERY OK source="messages" db=0.0ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-521", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40], "0cd62b8c-976e-4f74-aa41-a41ea1257735"]
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.3ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "0cd62b8c-976e-4f74-aa41-a41ea1257735", "fixture message", 12, ~N[2026-03-24 02:20:40], "db346e71-a145-4b5e-bf81-e75e06936e4f"]
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" WHERE "id" = ? ["0cd62b8c-976e-4f74-aa41-a41ea1257735"]
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["0cd62b8c-976e-4f74-aa41-a41ea1257735"]
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."id" = ?) ["db346e71-a145-4b5e-bf81-e75e06936e4f"]
+.
+23:20:40.873 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-584", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40], "78f78bf0-5b39-475d-91f8-84a3afbc7af4"]
+.
+23:20:40.873 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "fixture-user-648", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40], "a580df9d-2a8e-482b-b74f-b0e1599b9992"]
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","tool_calls","content","tool_call_id","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8) ["assistant", "a580df9d-2a8e-482b-b74f-b0e1599b9992", %{"name" => "search"}, "Hello from the assistant", "tool-1", 42, ~N[2026-03-24 02:20:40], "13ed685a-3091-4330-b253-92bfae51ecc4"]
+.
+23:20:40.873 [debug] QUERY OK source="messages" db=0.0ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "user-a", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40], "1b6f8785-d29e-4ee6-a5b6-7a9568f984c3"]
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at","id") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9) ["openai", "gpt-4o-mini", "telegram", "user-b", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40], "5d334760-1779-4d7a-b72e-b0255954087f"]
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "1b6f8785-d29e-4ee6-a5b6-7a9568f984c3", "first", 12, ~N[2026-03-24 02:20:40], "f7825507-3a5c-4906-981a-962f49fac768"]
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "1b6f8785-d29e-4ee6-a5b6-7a9568f984c3", "second", 12, ~N[2026-03-24 02:20:40], "83c56e08-434c-4166-86c7-487eb4ae9125"]
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "5d334760-1779-4d7a-b72e-b0255954087f", "third", 12, ~N[2026-03-24 02:20:40], "19318cc5-741d-4e4b-b914-23bf88d1d331"]
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at" ["1b6f8785-d29e-4ee6-a5b6-7a9568f984c3"]
+.
+23:20:40.873 [debug] QUERY OK db=0.0ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.873 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.873 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.873 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.873 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.873 [debug] QUERY OK source="sessions" db=0.0ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.881 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["344ea56e-7cd1-4705-8d79-1de8d9de18e4", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "loop-success", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.881 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "344ea56e-7cd1-4705-8d79-1de8d9de18e4", "Earlier answer", 3, ~N[2026-03-24 02:20:40], "d97b7ad4-bb29-4b6b-8614-5425924b30d6"]
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["344ea56e-7cd1-4705-8d79-1de8d9de18e4"]
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.2ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["344ea56e-7cd1-4705-8d79-1de8d9de18e4"]
+.
+23:20:40.887 [debug] QUERY OK db=0.0ms queue=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.887 [debug] QUERY OK db=0.4ms queue=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.887 [debug] QUERY OK db=0.3ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.887 [debug] QUERY OK db=0.2ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["d734fd73-ea2b-4192-bdee-8dd4fdb7ce17", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "loop-tool", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["d734fd73-ea2b-4192-bdee-8dd4fdb7ce17"]
+
+23:20:40.887 [info] Session d734fd73-ea2b-4192-bdee-8dd4fdb7ce17: 5 in / 3 out tokens
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["d734fd73-ea2b-4192-bdee-8dd4fdb7ce17"]
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [5, 3, ~N[2026-03-24 02:20:40], "d734fd73-ea2b-4192-bdee-8dd4fdb7ce17"]
+
+23:20:40.887 [info] Session d734fd73-ea2b-4192-bdee-8dd4fdb7ce17: 2 in / 4 out tokens
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["d734fd73-ea2b-4192-bdee-8dd4fdb7ce17"]
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.0ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [7, 7, ~N[2026-03-24 02:20:40], "d734fd73-ea2b-4192-bdee-8dd4fdb7ce17"]
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "d734fd73-ea2b-4192-bdee-8dd4fdb7ce17", "Run the tool", 3, ~N[2026-03-24 02:20:40], "41cf04c6-e6f3-4a06-aaf6-5f1c5162ae63"]
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.0ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "d734fd73-ea2b-4192-bdee-8dd4fdb7ce17", "Tool complete", 3, ~N[2026-03-24 02:20:40], "ce5aae10-d0b7-4425-80f2-045a3c7ddfee"]
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.0ms decode=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["d734fd73-ea2b-4192-bdee-8dd4fdb7ce17"]
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["d734fd73-ea2b-4192-bdee-8dd4fdb7ce17"]
+.
+23:20:40.887 [debug] QUERY OK db=0.1ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.887 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.887 [debug] QUERY OK db=0.2ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.887 [debug] QUERY OK db=0.1ms queue=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.1ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.1ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:40.887 [debug] QUERY OK source="sessions" db=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["efcc208b-3e13-4f6c-84f6-bcb882c55668", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "loop-error", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["efcc208b-3e13-4f6c-84f6-bcb882c55668"]
+
+23:20:40.887 [warning] Provider call failed for session efcc208b-3e13-4f6c-84f6-bcb882c55668: :upstream_timeout
+
+23:20:40.887 [debug] QUERY OK source="messages" db=0.0ms queue=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "efcc208b-3e13-4f6c-84f6-bcb882c55668", "Hello", 1, ~N[2026-03-24 02:20:40], "550d1a5a-eb89-408a-98a1-a799369f60b2"]
+
+23:20:40.998 [debug] QUERY OK source="messages" db=0.2ms queue=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["efcc208b-3e13-4f6c-84f6-bcb882c55668"]
+
+23:20:40.998 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["efcc208b-3e13-4f6c-84f6-bcb882c55668"]
+.
+23:20:40.999 [debug] QUERY OK db=0.0ms
+PRAGMA foreign_keys = ON []
+
+23:20:40.999 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  channel TEXT NOT NULL,
+  channel_user_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  token_count_in INTEGER NOT NULL DEFAULT 0,
+  token_count_out INTEGER NOT NULL DEFAULT 0,
+  metadata TEXT,
+  inserted_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)
+ []
+
+23:20:40.999 [debug] QUERY OK db=0.1ms
+CREATE TABLE IF NOT EXISTS messages (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
+  content TEXT NOT NULL,
+  tool_calls TEXT,
+  tool_call_id TEXT,
+  token_count INTEGER NOT NULL DEFAULT 0,
+  inserted_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+)
+ []
+
+23:20:40.999 [debug] QUERY OK db=0.1ms
+CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id) []
+
+23:20:40.999 [debug] QUERY OK source="messages" db=0.0ms
+DELETE FROM "messages" AS m0 []
+
+23:20:40.999 [debug] QUERY OK source="sessions" db=0.0ms
+DELETE FROM "sessions" AS s0 []
+
+23:20:41.000 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+INSERT INTO "sessions" ("id","metadata","provider","model","channel","channel_user_id","token_count_in","token_count_out","inserted_at","updated_at") VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10) ["a03ea661-b773-4b64-8127-3228041d6336", %{"locale" => "en"}, "openai", "gpt-4o-mini", "cli", "loop-max", 0, 0, ~N[2026-03-24 02:20:40], ~N[2026-03-24 02:20:40]]
+
+23:20:41.000 [debug] QUERY OK source="messages" db=0.1ms
+SELECT m0."id", m0."role", m0."content", m0."tool_calls", m0."tool_call_id", m0."token_count", m0."session_id", m0."inserted_at" FROM "messages" AS m0 WHERE (m0."session_id" = ?) ORDER BY m0."inserted_at", m0."id" ["a03ea661-b773-4b64-8127-3228041d6336"]
+
+23:20:41.000 [info] Session a03ea661-b773-4b64-8127-3228041d6336: 1 in / 1 out tokens
+
+23:20:41.000 [debug] QUERY OK source="sessions" db=0.0ms queue=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["a03ea661-b773-4b64-8127-3228041d6336"]
+
+23:20:41.000 [debug] QUERY OK source="sessions" db=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [1, 1, ~N[2026-03-24 02:20:41], "a03ea661-b773-4b64-8127-3228041d6336"]
+
+23:20:41.001 [info] Session a03ea661-b773-4b64-8127-3228041d6336: 1 in / 1 out tokens
+
+23:20:41.001 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["a03ea661-b773-4b64-8127-3228041d6336"]
+
+23:20:41.001 [debug] QUERY OK source="sessions" db=0.1ms queue=0.1ms
+UPDATE "sessions" SET "token_count_in" = ?, "token_count_out" = ?, "updated_at" = ? WHERE "id" = ? [2, 2, ~N[2026-03-24 02:20:41], "a03ea661-b773-4b64-8127-3228041d6336"]
+
+23:20:41.001 [debug] QUERY OK source="messages" db=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["user", "a03ea661-b773-4b64-8127-3228041d6336", "Keep calling tools", 4, ~N[2026-03-24 02:20:41], "ccaa8acf-2880-4b18-ab16-448a74d046d2"]
+
+23:20:41.002 [debug] QUERY OK source="messages" db=0.1ms queue=0.1ms
+INSERT INTO "messages" ("role","session_id","content","token_count","inserted_at","id") VALUES (?1,?2,?3,?4,?5,?6) ["assistant", "a03ea661-b773-4b64-8127-3228041d6336", "Tool call limit reached.", 6, ~N[2026-03-24 02:20:41], "d2805afc-c9d2-47f2-84fb-4190f2347764"]
+
+23:20:41.002 [debug] QUERY OK source="sessions" db=0.1ms
+SELECT s0."id", s0."channel", s0."channel_user_id", s0."provider", s0."model", s0."token_count_in", s0."token_count_out", s0."metadata", s0."inserted_at", s0."updated_at" FROM "sessions" AS s0 WHERE (s0."id" = ?) ["a03ea661-b773-4b64-8127-3228041d6336"]
+.
+Finished in 1.1 seconds (0.5s async, 0.6s sync)
+1 doctest, 114 tests, 0 failures
