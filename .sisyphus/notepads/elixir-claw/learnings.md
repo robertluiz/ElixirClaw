@@ -134,6 +134,11 @@
 - Resolving trusted commands before `GenServer.start_link/3` keeps `start_link/1` failures clean (`{:error, :command_not_found}`) while still allowing Windows-safe `{:spawn_executable, path}` usage and optional `cmd.exe /c` wrapping for `.cmd`/`.bat` scripts.
 - Tracking pending JSON-RPC calls as `id => {from, timer_ref, request_type}` makes timeout cleanup, response correlation, and bulk failure on port exit straightforward without mixing protocol parsing into the public API layer.
 
+## Task 23 Learnings
+- A CLI channel can stay Windows-safe by pushing `:io.get_line/2` into a reader task, keeping the GenServer mailbox responsive while still supporting line-based interactive input.
+- Treating `/commands` as first-class parse results (`:quit`, `:new_session`, `{:switch_model, name}`, formatted help/session strings) keeps the channel boundary simple and avoids leaking terminal concerns into session state.
+- For SQLite-backed conversation ordering, `inserted_at` alone is not stable enough in fast tests; using `rowid` as the local tiebreaker keeps summarization prompts deterministic.
+
 ## Task 25 Learnings
 - For channel processes that call Mox-backed dependencies from inside a GenServer, allowing the mock modules to the server process during `init/1` keeps tests isolated without switching Mox into global mode.
 - A Discord channel can stay gateway-free in tests by treating `Nostrum.Consumer.handle_event/1` as a thin event forwarder and injecting only the outbound API wrapper; fake `{:MESSAGE_CREATE, message, %{pid: server_pid}}` tuples are enough to exercise behaviour.

@@ -79,7 +79,7 @@ defmodule ElixirClaw.Agent.Memory do
   defp list_session_messages(session_id) do
     from(message in Message,
       where: message.session_id == ^session_id,
-      order_by: [asc: message.inserted_at, asc: message.id]
+      order_by: [asc: message.inserted_at, asc: fragment("rowid")]
     )
     |> Repo.all()
   end

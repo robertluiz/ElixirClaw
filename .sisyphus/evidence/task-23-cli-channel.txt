@@ -1,0 +1,15 @@
+Task 23 — CLI channel evidence
+
+Created files:
+- lib/elixir_claw/channels/cli.ex
+- test/elixir_claw/channels/cli_test.exs
+
+Verification:
+- mix test test/elixir_claw/channels/cli_test.exs
+  - Result: 13 tests, 0 failures
+- mix test
+  - Result: 1 doctest, 223 tests, 0 failures
+
+Notes:
+- Elixir LSP diagnostics could not be run because `elixir-ls` is not installed in this environment.
+- Full suite stability also required preserving compile/test compatibility for existing Discord/Telegram mock behaviours and fixing deterministic message ordering in memory consolidation.

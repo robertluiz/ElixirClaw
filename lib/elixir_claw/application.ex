@@ -28,12 +28,16 @@ defmodule ElixirClaw.Application do
 
   defp ensure_optional_test_modules_loaded do
     for module <- [
-          ElixirClaw.MockProvider,
-          ElixirClaw.MockChannel,
-          ElixirClaw.MockTool,
-          ElixirClaw.MockHTTPClient,
-          ElixirClaw.MockStdioClient
-        ] do
+           ElixirClaw.MockProvider,
+           ElixirClaw.MockChannel,
+           ElixirClaw.MockTool,
+           ElixirClaw.MockDiscordAPI,
+           ElixirClaw.MockDiscordSessionManager,
+           ElixirClaw.MockDiscordAgentLoop,
+           ElixirClaw.MockHTTPClient,
+           ElixirClaw.MockStdioClient,
+           ElixirClaw.MockTelegex
+         ] do
       _ = Code.ensure_loaded?(module)
     end
 
