@@ -9,8 +9,9 @@ defmodule ElixirClaw.Application do
   def start(_type, _args) do
     children = [
       ElixirClaw.Repo,
+      {Phoenix.PubSub, name: ElixirClaw.PubSub},
       {Registry, keys: :unique, name: ElixirClaw.SessionRegistry},
-      {DynamicSupervisor, strategy: :one_for_one, name: ElixirClaw.SessionSupervisor},
+      {DynamicSupervisor, strategy: :one_for_one, name: ElixirClaw.SessionSupervisor}
       # Starts a worker by calling: ElixirClaw.Worker.start_link(arg)
       # {ElixirClaw.Worker, arg}
     ]
