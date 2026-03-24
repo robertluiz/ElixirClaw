@@ -50,3 +50,8 @@
 - SQLite rejects `ALTER TABLE ADD CONSTRAINT`, so message role validation must be expressed inline in `CREATE TABLE` for migrations.
 - `:memory:` SQLite plus `Ecto.Adapters.SQL.Sandbox` is simplest in sync tests when one shared sandbox connection owns the database lifecycle.
 - For in-memory SQLite tests, creating tables once on the shared sandbox connection and truncating rows between tests avoids per-connection schema drift.
+
+## Task 7 Learnings (Session Manager)
+- Per-session processes fit cleanly as `DynamicSupervisor` children registered through `{:via, Registry, {ElixirClaw.SessionRegistry, session_id}}`, keeping lookup cheap without a global GenServer bottleneck.
+- Sandbox-owned worker processes should be allowed at `init/1`; test cleanup should terminate session workers directly instead of calling persistence-heavy APIs after the owning test process exits.
+- With `System.monotonic_time(:second)`, rate limiting is easiest as a rolling timestamp window pruned on each `record_call/2`, while accumulated token totals stay authoritative in both worker state and the persisted session row.

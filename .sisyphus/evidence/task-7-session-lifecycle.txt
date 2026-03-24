@@ -1,0 +1,22 @@
+Task 7 Evidence — SessionManager
+
+Files added:
+- lib/elixir_claw/session/session_manager.ex
+- lib/elixir_claw/session/worker.ex
+- test/elixir_claw/session_test.exs
+
+Files updated:
+- lib/elixir_claw/application.ex
+
+Verification:
+- mix test test/elixir_claw/session_test.exs => PASS (7 tests, 0 failures)
+- mix compile --warnings-as-errors => PASS
+- mix test => PASS (1 doctest, 64 tests, 0 failures)
+
+Implemented behaviors:
+- Public Session manager API for start/get/list/end/record_call
+- Per-session GenServer workers under DynamicSupervisor
+- Registry-backed session lookup
+- Rolling 60-second rate limiting with configurable max_calls_per_minute
+- Token usage accumulation persisted to Ecto session records
+- Crash isolation between concurrent session workers
