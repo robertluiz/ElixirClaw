@@ -177,3 +177,8 @@
 - `rel/env.bat.eex` is the standard Mix release hook for Windows environment setup; it gets copied into `releases/<version>/env.bat` in the release assembly.
 - On Windows, ANSI color in cmd.exe requires the `VirtualTerminalLevel` registry key; Windows Terminal and PowerShell 7 work without changes.
 - Always run `mix test` with the full Chocolatey path on Windows: `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test`.
+
+## Task 34 Learnings
+- JSONC comment stripping for OpenCode configs must respect quoted strings; a small char-by-char state machine avoids corrupting `http://` and `https://` URLs that a naive `//` regex would truncate.
+- The safest OpenCode import shape is an allow-list projection: ignore `providers` entirely, drop `env`, reject secret-like keys recursively, and emit only `%{name, transport, command|url, args}` plus deduplicated skill path strings.
+- MCP stdio command sanitization can stay simple and effective at import time by rejecting commands containing shell control operators (`;`, `&&`, `||`, `|`, `>`, `<`, backtick`) instead of trying to escape them.

@@ -1,0 +1,33 @@
+Task 34 — OpenCode Config Sync
+
+Files added:
+- lib/elixir_claw/opencode/config_sync.ex
+- test/elixir_claw/opencode/config_sync_test.exs
+- test/fixtures/opencode/test_opencode.json
+- test/fixtures/opencode/test_opencode_with_secrets.json
+- test/fixtures/opencode/test_opencode_with_comments.json
+- test/fixtures/opencode/invalid_opencode.json
+
+Verification:
+1. Targeted test run
+   Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test test/elixir_claw/opencode/config_sync_test.exs
+   Result: 6 tests, 0 failures
+
+2. Full test suite
+   Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test
+   Result: 1 doctest, 269 tests, 8 failures
+   Note: Failures are pre-existing/unrelated OpenCode Exporter/Importer tests:
+   - ElixirClaw.OpenCode.ExporterTest: 4 failures
+   - ElixirClaw.OpenCode.ImporterTest: 4 failures
+
+3. Diagnostics
+   lsp_diagnostics could not run because `elixir-ls` is configured but not installed in this environment.
+
+Behavior covered:
+- Imports MCP stdio and HTTP server definitions from JSONC config
+- Strips comments without breaking URLs inside strings
+- Filters provider config entirely
+- Removes `env` and secret-like keys from imported data
+- Rejects unsafe stdio command strings containing shell control operators
+- Deduplicates imported skill paths
+- Returns `{:error, :config_not_found}` and `{:error, :invalid_json}` on invalid input

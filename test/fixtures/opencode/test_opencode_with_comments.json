@@ -1,0 +1,20 @@
+{
+  // MCP server comments should be ignored
+  "mcpServers": {
+    "commented": {
+      "url": "http://localhost:5000/mcp" // trailing comment
+    }
+  },
+  /* Providers must never be imported */
+  "providers": {
+    "anthropic": {
+      "apiKey": "sk-ant-secret"
+    }
+  },
+  "skills": {
+    "paths": [
+      "~/.agents/skills",
+      ".opencode/skills"
+    ]
+  }
+}

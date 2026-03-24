@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-fs"]
+    },
+    "webserver": {
+      "url": "http://localhost:8080/mcp"
+    }
+  },
+  "providers": {
+    "anthropic": {
+      "apiKey": "sk-ant-REAL_KEY"
+    }
+  },
+  "skills": {
+    "paths": ["~/.agents/skills", ".opencode/skills", "~/.agents/skills"]
+  }
+}
