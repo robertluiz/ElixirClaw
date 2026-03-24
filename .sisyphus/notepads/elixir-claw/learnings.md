@@ -168,3 +168,12 @@
 - For failover, keeping the policy pure and provider-agnostic works well: retry only on explicit transient atoms (`:timeout`, `:rate_limited`, `:server_error`), stop immediately on `:auth_error`, and emit telemetry only when actually moving to the next provider.
 - A small two-phase circuit breaker API (`allow_call` inside the GenServer, provider function execution outside it, then `record_result`) avoids turning the breaker process into a blocking bottleneck while still preserving closed/open/half-open transitions.
 - Token-bucket rate limiting stays deterministic in tests when the GenServer accepts an injected monotonic `time_fn`; storing bucket tokens as floats makes partial refill math straightforward without adding queueing or timers.
+
+## Task 31 Learnings
+- On Windows, all `/` occurrences in Elixir source are NOT automatically filesystem path separators: HTTP URLs, Telegram/CLI slash commands, URI paths, regex delimiters, and `cmd.exe /c` flags all contain `/` safely.
+- The entire ElixirClaw lib/ codebase uses `Path.join/2` and `Path` module functions for filesystem operations — no actual hardcoded `/` path separators exist.
+- `StdioClient` already handles Windows correctly: `{:spawn_executable, path}` + `resolve_shell_script_command/2` wraps `.cmd`/`.bat` in `System.get_env("COMSPEC") || "cmd"` with `["/c", executable | args]`.
+- `releases/0` in mix.exs should be a `defp` returning a keyword list (not inline in `project/0`) to keep the project function readable.
+- `rel/env.bat.eex` is the standard Mix release hook for Windows environment setup; it gets copied into `releases/<version>/env.bat` in the release assembly.
+- On Windows, ANSI color in cmd.exe requires the `VirtualTerminalLevel` registry key; Windows Terminal and PowerShell 7 work without changes.
+- Always run `mix test` with the full Chocolatey path on Windows: `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test`.

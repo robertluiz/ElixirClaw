@@ -1,0 +1,83 @@
+Task 31 — Windows Compatibility Verification + Release Config
+=============================================================
+Date: 2026-03-24
+Platform: Windows (native, no WSL)
+Elixir: 1.19 / OTP 28 (Chocolatey install)
+Project: C:\projects\ElixirClaw\
+
+## Test Suite Results
+
+### Run 1 (before changes)
+Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test
+Result: 1 doctest, 249 tests, 0 failures
+Duration: ~2.7 seconds
+
+### Run 2 (after changes)
+Command: C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test
+Result: 1 doctest, 249 tests, 0 failures
+Duration: ~2.6 seconds
+
+## Hardcoded Path Separator Scan
+
+Grepped lib/**/*.ex for patterns matching ["'][^"']*/[^"']*["']
+
+Findings:
+- lib/elixir_claw/providers/*.ex — HTTP URLs (e.g. "https://api.openai.com/v1") — NOT filesystem paths, OK
+- lib/elixir_claw/channels/telegram.ex — Telegram bot commands ("/help", "/start", "/new") — NOT filesystem paths, OK
+- lib/elixir_claw/channels/cli.ex — CLI slash commands ("/help", "/new", "/quit") — NOT filesystem paths, OK
+- lib/elixir_claw/mcp/stdio_client.ex — ["/c", executable | args] (cmd.exe /c flag) — Windows-correct, OK
+- lib/elixir_claw/mcp/http_client.ex — uri.path || "/" (HTTP URI path) — NOT filesystem path, OK
+- lib/elixir_claw/skills/matcher.ex — "/" in regex trigger parsing — NOT filesystem path, OK
+
+VERDICT: No hardcoded filesystem path separators found. Codebase is already cross-platform clean.
+No changes needed to lib/ files.
+
+## MCP StdioClient Verification
+
+lib/elixir_claw/mcp/stdio_client.ex confirmed:
+- Uses {:spawn_executable, path} NOT {:spawn, shell_string} — correct, avoids shell injection
+- .cmd/.bat scripts wrapped in cmd.exe /c path via resolve_shell_script_command/2 — Windows-correct
+- Uses System.get_env("COMSPEC") || "cmd" for cmd.exe path — robust, uses Windows env var
+- No hardcoded filesystem / separators in Port spawn args
+- resolve_executable/1 uses Path.type/1 and System.find_executable/1 — cross-platform
+
+## Changes Made
+
+### 1. mix.exs — releases section added
+Added releases() function with:
+  - include_erts: true (bundles Erlang runtime in release)
+  - applications: [runtime_tools: :permanent]
+
+### 2. rel/env.bat.eex — created
+Windows release environment setup template covering:
+  - LLM provider API keys (all commented examples)
+  - Telegram/Discord bot tokens (commented examples)
+  - Codex/Copilot OAuth credentials (commented examples)
+  - Database and skills path overrides (commented examples)
+  - Release node name and cookie (commented examples)
+  - No real secrets included
+
+### 3. README.md — replaced placeholder with full documentation
+Covers:
+  - What ElixirClaw is
+  - Requirements
+  - Installation (deps.get + compile)
+  - Configuration (config.toml + env vars table)
+  - Running (mix run + release builds)
+  - Windows-specific section:
+    - Full path to mix.bat for tests
+    - ANSI color support notes
+    - MCP stdio tool server Windows config examples
+    - Release env.bat.eex usage
+  - CLI commands reference
+  - Architecture overview
+
+## Verification Summary
+
+✅ 249 tests, 0 failures (before changes)
+✅ 249 tests, 0 failures (after changes)
+✅ mix.exs updated with releases: [elixir_claw: [include_erts: true, ...]]
+✅ rel/env.bat.eex created with Windows environment setup
+✅ No hardcoded filesystem / separators in lib/ — all paths use Path module or are HTTP URLs
+✅ README.md updated with Windows-specific usage notes
+✅ MCP stdio Port spawning verified: {:spawn_executable, path} + cmd.exe /c for .bat/.cmd
