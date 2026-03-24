@@ -1,0 +1,26 @@
+Task 20 — MCP HTTP Client via hermes_mcp
+
+Docs researched:
+- https://hex.pm/packages/hermes_mcp
+- https://hexdocs.pm/hermes_mcp/Hermes.Client.html
+- https://hexdocs.pm/hermes_mcp/Hermes.Transport.StreamableHTTP.html
+- https://preview.hex.pm/preview/hermes_mcp/0.14.1/show/lib/hermes/client/base.ex
+- https://preview.hex.pm/preview/hermes_mcp/0.14.1/show/lib/hermes/transport/streamable_http.ex
+
+Implemented files:
+- lib/elixir_claw/mcp/http_client.ex
+- test/elixir_claw/mcp/http_client_test.exs
+
+Verification:
+- mix compile --warnings-as-errors -> PASS
+- mix test test/elixir_claw/mcp/http_client_test.exs -> PASS (7 tests, 0 failures)
+- mix test -> PASS (1 doctest, 171 tests, 0 failures)
+
+Behavior verified by tests:
+- localhost HTTP connect + MCP initialize/initialized handshake
+- insecure remote HTTP rejection
+- tool listing normalization + cache reuse
+- tool call success
+- 64KB output truncation marker
+- timeout handling via Task.yield/Task.shutdown wrapper
+- disconnect stops client process

@@ -111,6 +111,11 @@
 - Keeping frontmatter keys as strings and mapping only known fields into `%ElixirClaw.Skills.Skill{}` avoids unsafe atom creation while still giving typed defaults for optional metadata.
 - Returning `{:error, {path, reason}}` from directory loads preserves per-file failures without aborting the whole scan, which makes malformed skill fixtures easy to surface in tests.
 
+## Task 20 Learnings (MCP HTTP Client)
+- `Hermes.Client.Supervisor` can be used directly without `use Hermes.Client`; the practical wrapper pattern is to start the Hermes supervisor, keep unique client/transport names, and call `Hermes.Client.Base` functions from the wrapper.
+- For multiple MCP HTTP clients in one BEAM, `{:global, {module, unique_id, role}}` names are the simplest safe way to avoid dynamic atom creation while still satisfying Hermes' named-process requirements.
+- Hermes' own request timeout can kill the internal client process, so the wrapper should use a slightly larger inner Hermes timeout and enforce the public timeout externally with `Task.yield/2 || Task.shutdown/2`.
+
 ## Task 26 Learnings
 - Conversation consolidation can stay small and testable as a synchronous module when it scopes itself to Ecto reads/writes plus a single provider callback; a transaction is enough to swap old history for one summary message safely.
 - For this repo's SQLite in-memory tests, `setup_all` with shared sandbox ownership plus explicit table creation keeps new Ecto-backed test files deterministic without introducing a separate DataCase helper.
