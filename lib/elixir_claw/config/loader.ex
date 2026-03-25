@@ -2,6 +2,7 @@ defmodule ElixirClaw.Config.Loader do
   @moduledoc false
 
   alias ElixirClaw.Config
+  alias ElixirClaw.Skills.Paths
 
   @default_max_context_tokens 4096
   @default_summarization_threshold 0.6
@@ -38,6 +39,11 @@ defmodule ElixirClaw.Config.Loader do
       database_path: nested_or_root(interpolated, ["database", "database_path"], "database_path"),
       task_agents: task_agents,
       skills_dir: nested_or_root(interpolated, ["skills", "skills_dir"], "skills_dir"),
+      skill_paths:
+        build_skill_paths(
+          nested_or_root(interpolated, ["skills", "skills_dir"], "skills_dir"),
+          get_nested(interpolated, ["skills", "paths"])
+        ),
       max_context_tokens:
         nested_or_root(interpolated, ["context", "max_context_tokens"], "max_context_tokens") ||
           @default_max_context_tokens,
@@ -203,6 +209,16 @@ defmodule ElixirClaw.Config.Loader do
 
   defp nested_or_root(raw, path, root_key) do
     get_nested(raw, path) || Map.get(raw, root_key)
+  end
+
+  defp build_skill_paths(skills_dir, configured_paths) do
+    configured_paths
+    |> List.wrap()
+    |> case do
+      [] -> [skills_dir]
+      paths -> [skills_dir | paths]
+    end
+    |> Paths.resolve()
   end
 
   defp get_nested(value, []), do: value

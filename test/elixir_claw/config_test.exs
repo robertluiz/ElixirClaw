@@ -19,6 +19,33 @@ defmodule ElixirClaw.ConfigTest do
              config.providers
 
     assert [%{"type" => "cli"}] = config.channels
+    assert config.skill_paths == [Path.expand("~/.agents/skills")]
+  end
+
+  test "skills config merges explicit paths with the default user skills directory" do
+    toml = """
+    database_path = "memory.db"
+
+    [[providers]]
+    name = "openai"
+    api_key = "sk-inline-test-key"
+    model = "gpt-4o-mini"
+
+    [[channels]]
+    type = "cli"
+
+    [skills]
+    skills_dir = "./skills"
+    paths = ["custom/skills", "~/.agents/skills"]
+    """
+
+    assert {:ok, %Config{} = config} = Loader.load_from_string(toml)
+
+    assert config.skill_paths == [
+             Path.expand("./skills"),
+             Path.expand("custom/skills"),
+             Path.expand("~/.agents/skills")
+           ]
   end
 
   test "load_from_string parses channel tables with enabled telegram config" do

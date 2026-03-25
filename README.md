@@ -50,6 +50,28 @@ Use environment variable interpolation for secrets: `api_key = "${OPENAI_API_KEY
 
 You can also define specialized task agents for common workflows. These act like focused presets inspired by multi-agent toolkits such as oh-my-openagent, but are implemented here as session-scoped prompt profiles that fit the existing Elixir runtime.
 
+### Skills directories
+
+ElixirClaw now supports multiple skill directories.
+
+At runtime, the project always considers the user-level skills folder:
+
+- `~/.agents/skills`
+
+You can also configure project-specific skill folders in `config/config.toml`:
+
+```toml
+[skills]
+skills_dir = "./skills"
+paths = ["./custom-skills"]
+```
+
+Resolution rules:
+- `skills.skills_dir` is treated as the primary project skill directory when present.
+- `skills.paths` can add extra skill directories.
+- `~/.agents/skills` is added automatically as an additional fallback path.
+- Paths are expanded and deduplicated before loading.
+
 ### Minimal configuration
 
 ```toml

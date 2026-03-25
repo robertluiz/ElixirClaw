@@ -37,6 +37,9 @@ guild_id = ""
 # --- Skills ---
 [skills]
 skills_dir = "./skills"
+paths = ["./custom-skills"]
+
+# The user-level fallback directory ~/.agents/skills is also loaded automatically.
 
 # --- Specialized Task Agents ---
 [[task_agents]]

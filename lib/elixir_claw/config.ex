@@ -8,6 +8,7 @@ defmodule ElixirClaw.Config do
     :database_path,
     task_agents: [],
     skills_dir: nil,
+    skill_paths: [],
     max_context_tokens: 4096,
     summarization_threshold: 0.6,
     skill_token_budget: 1024,

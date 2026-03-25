@@ -89,4 +89,37 @@ defmodule ElixirClaw.Skills.LoaderTest do
       assert Loader.load_skills_dir(empty_dir) == []
     end
   end
+
+  describe "load_skills_dirs/1" do
+    test "loads skills from multiple directories after path resolution" do
+      extra_dir = Path.join(System.tmp_dir!(), "skills_extra_#{System.unique_integer([:positive])}")
+      File.mkdir_p!(extra_dir)
+
+      extra_skill_path = Path.join(extra_dir, "extra_skill.md")
+
+      File.write!(extra_skill_path, """
+      ---
+      name: extra-skill
+      description: Extra skill
+      ---
+
+      Extra body.
+      """)
+
+      on_exit(fn -> File.rm_rf!(extra_dir) end)
+
+      results = Loader.load_skills_dirs([@fixtures_dir, extra_dir])
+
+      loaded_names =
+        results
+        |> Enum.flat_map(fn
+          {:ok, %Skill{name: name}} -> [name]
+          _ -> []
+        end)
+
+      assert "elixir-expert" in loaded_names
+      assert "minimal-skill" in loaded_names
+      assert "extra-skill" in loaded_names
+    end
+  end
 end

@@ -140,8 +140,19 @@ if File.exists?(config_path) do
         config :elixir_claw, ElixirClaw.Repo, path: database_path
       end
 
-      if skills_dir = get_in(interpolated, ["skills", "skills_dir"]) do
-        config :elixir_claw, :skills_dir, skills_dir
+      configured_skill_paths =
+        [get_in(interpolated, ["skills", "skills_dir"]), get_in(interpolated, ["skills", "paths"])]
+        |> List.flatten()
+
+      resolved_skill_paths = ElixirClaw.Skills.Paths.resolve(configured_skill_paths)
+
+      case resolved_skill_paths do
+        [] ->
+          :ok
+
+        [primary | _] ->
+          config :elixir_claw, :skills_dir, primary
+          config :elixir_claw, :skill_paths, resolved_skill_paths
       end
 
     {:error, reason} ->

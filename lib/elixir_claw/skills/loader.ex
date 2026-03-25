@@ -33,6 +33,7 @@ defmodule ElixirClaw.Skills.Loader do
   """
 
   alias ElixirClaw.Skills.Skill
+  alias ElixirClaw.Skills.Paths
 
   @type load_result :: {:ok, Skill.t()} | {:error, atom()}
   @type dir_load_result :: {:ok, Skill.t()} | {:error, {String.t(), atom()}}
@@ -64,6 +65,13 @@ defmodule ElixirClaw.Skills.Loader do
         {:error, reason} -> {:error, {path, reason}}
       end
     end)
+  end
+
+  @spec load_skills_dirs([Path.t()] | Path.t() | nil) :: [dir_load_result()]
+  def load_skills_dirs(dir_paths) do
+    dir_paths
+    |> Paths.resolve()
+    |> Enum.flat_map(&load_skills_dir/1)
   end
 
   defp split_frontmatter(contents) do
