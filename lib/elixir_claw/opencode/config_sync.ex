@@ -135,7 +135,10 @@ defmodule ElixirClaw.OpenCode.ConfigSync do
   end
 
   defp sanitize_nested_value(value) when is_map(value), do: reject_secret_keys(value)
-  defp sanitize_nested_value(value) when is_list(value), do: Enum.map(value, &sanitize_nested_value/1)
+
+  defp sanitize_nested_value(value) when is_list(value),
+    do: Enum.map(value, &sanitize_nested_value/1)
+
   defp sanitize_nested_value(value), do: value
 
   defp secret_like_key?(key) when is_binary(key) do
@@ -159,20 +162,30 @@ defmodule ElixirClaw.OpenCode.ConfigSync do
 
   defp do_strip_comments([], acc, _state), do: acc
 
-  defp do_strip_comments([?/ , ?/ | rest], acc, :code), do: skip_line_comment(rest, acc)
-  defp do_strip_comments([?/ , ?* | rest], acc, :code), do: skip_block_comment(rest, acc)
-  defp do_strip_comments([?" | rest], acc, :code), do: do_strip_comments(rest, [?" | acc], :string)
-  defp do_strip_comments([char | rest], acc, :code), do: do_strip_comments(rest, [char | acc], :code)
+  defp do_strip_comments([?/, ?/ | rest], acc, :code), do: skip_line_comment(rest, acc)
+  defp do_strip_comments([?/, ?* | rest], acc, :code), do: skip_block_comment(rest, acc)
+
+  defp do_strip_comments([?" | rest], acc, :code),
+    do: do_strip_comments(rest, [?" | acc], :string)
+
+  defp do_strip_comments([char | rest], acc, :code),
+    do: do_strip_comments(rest, [char | acc], :code)
 
   defp do_strip_comments([?\\, char | rest], acc, :string),
     do: do_strip_comments(rest, [char, ?\\ | acc], :string)
 
-  defp do_strip_comments([?" | rest], acc, :string), do: do_strip_comments(rest, [?" | acc], :code)
-  defp do_strip_comments([char | rest], acc, :string), do: do_strip_comments(rest, [char | acc], :string)
+  defp do_strip_comments([?" | rest], acc, :string),
+    do: do_strip_comments(rest, [?" | acc], :code)
+
+  defp do_strip_comments([char | rest], acc, :string),
+    do: do_strip_comments(rest, [char | acc], :string)
 
   defp skip_line_comment([], acc), do: acc
   defp skip_line_comment([?\n | rest], acc), do: do_strip_comments(rest, [?\n | acc], :code)
-  defp skip_line_comment([?\r, ?\n | rest], acc), do: do_strip_comments(rest, [?\n, ?\r | acc], :code)
+
+  defp skip_line_comment([?\r, ?\n | rest], acc),
+    do: do_strip_comments(rest, [?\n, ?\r | acc], :code)
+
   defp skip_line_comment([_char | rest], acc), do: skip_line_comment(rest, acc)
 
   defp skip_block_comment([], acc), do: acc

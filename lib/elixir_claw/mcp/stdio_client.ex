@@ -127,7 +127,10 @@ defmodule ElixirClaw.MCP.StdioClient do
 
   defp send_request(method, params, from, request_type, state) do
     id = state.next_id
-    payload = Jason.encode!(%{"jsonrpc" => "2.0", "id" => id, "method" => method, "params" => params}) <> "\n"
+
+    payload =
+      Jason.encode!(%{"jsonrpc" => "2.0", "id" => id, "method" => method, "params" => params}) <>
+        "\n"
 
     case state.send_fn.(state.port, payload) do
       {:error, reason} ->
@@ -149,7 +152,8 @@ defmodule ElixirClaw.MCP.StdioClient do
   defp maybe_handle_jsonrpc_line(line, state) do
     with {:ok, message} <- Jason.decode(line),
          id when is_integer(id) <- message["id"],
-         {{from, timer_ref, request_type}, pending_requests} <- Map.pop(state.pending_requests, id) do
+         {{from, timer_ref, request_type}, pending_requests} <-
+           Map.pop(state.pending_requests, id) do
       _ = Process.cancel_timer(timer_ref)
       GenServer.reply(from, decode_response(message, request_type))
       %{state | pending_requests: pending_requests}
@@ -249,9 +253,10 @@ defmodule ElixirClaw.MCP.StdioClient do
   end
 
   defp resolve_command([executable | args]) do
-    cond do
-      shell_script?(executable) -> resolve_shell_script_command(executable, args)
-      true -> resolve_direct_command(executable, args)
+    if shell_script?(executable) do
+      resolve_shell_script_command(executable, args)
+    else
+      resolve_direct_command(executable, args)
     end
   end
 
@@ -274,9 +279,10 @@ defmodule ElixirClaw.MCP.StdioClient do
   end
 
   defp resolve_executable(executable) do
-    cond do
-      Path.type(executable) == :absolute and File.regular?(executable) -> executable
-      true -> System.find_executable(executable)
+    if Path.type(executable) == :absolute and File.regular?(executable) do
+      executable
+    else
+      System.find_executable(executable)
     end
   end
 

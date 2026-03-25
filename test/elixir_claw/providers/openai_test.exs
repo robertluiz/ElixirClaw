@@ -195,7 +195,10 @@ defmodule ElixirClaw.Providers.OpenAITest do
            }
   end
 
-  test "invalid API key returns unauthorized and never logs the secret", %{bypass: bypass, api_key: api_key} do
+  test "invalid API key returns unauthorized and never logs the secret", %{
+    bypass: bypass,
+    api_key: api_key
+  } do
     expect_chat_request(bypass, fn conn, _body ->
       Plug.Conn.resp(
         conn,

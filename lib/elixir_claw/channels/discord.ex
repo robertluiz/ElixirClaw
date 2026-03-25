@@ -5,14 +5,17 @@ defmodule ElixirClaw.Channels.Discord do
 
   require Logger
 
+  alias ElixirClaw.Agent.Loop, as: AgentLoopModule
   alias ElixirClaw.Bus.MessageBus
+  alias ElixirClaw.Session.Manager, as: SessionManagerModule
   alias ElixirClaw.Types.Message
+  alias Nostrum.Api.Message, as: NostrumMessage
 
   @behaviour ElixirClaw.Channel
   @behaviour Nostrum.Consumer
 
   @max_message_length 2_000
-  @help_message "Available commands: !help shows this message, !new starts a new session."
+  @help_message "Available commands: !help shows this message, !new starts a new session, !approve <tool...> approves privileged tools for the current session."
   @new_session_message "Started a new session."
 
   defmodule API do
@@ -24,22 +27,26 @@ defmodule ElixirClaw.Channels.Discord do
     @behaviour API
 
     @impl true
-    def create_message(channel_id, content), do: Nostrum.Api.Message.create(channel_id, content)
+    def create_message(channel_id, content), do: NostrumMessage.create(channel_id, content)
   end
 
   defmodule SessionManager do
     @callback start_session(map()) :: {:ok, String.t()} | {:error, term()}
     @callback end_session(String.t()) :: :ok
+    @callback approve_tools(String.t(), [String.t()]) :: :ok | {:error, term()}
   end
 
   defmodule DefaultSessionManager do
     @behaviour SessionManager
 
     @impl true
-    def start_session(attrs), do: ElixirClaw.Session.Manager.start_session(attrs)
+    def start_session(attrs), do: SessionManagerModule.start_session(attrs)
 
     @impl true
-    def end_session(session_id), do: ElixirClaw.Session.Manager.end_session(session_id)
+    def end_session(session_id), do: SessionManagerModule.end_session(session_id)
+
+    @impl true
+    def approve_tools(session_id, tool_names), do: SessionManagerModule.approve_tools(session_id, tool_names)
   end
 
   defmodule AgentLoop do
@@ -51,7 +58,7 @@ defmodule ElixirClaw.Channels.Discord do
 
     @impl true
     def process_message(session_id, content),
-      do: ElixirClaw.Agent.Loop.process_message(session_id, content)
+      do: AgentLoopModule.process_message(session_id, content)
   end
 
   @type state :: %{
@@ -212,6 +219,9 @@ defmodule ElixirClaw.Channels.Discord do
         command?(content, "!new") ->
           start_new_session(raw_message, state)
 
+        command?(content, "!approve") ->
+          approve_tools_command(raw_message, content, state)
+
         dm_message?(raw_message) ->
           process_direct_message(raw_message, content, state)
 
@@ -229,14 +239,8 @@ defmodule ElixirClaw.Channels.Discord do
   defp process_direct_message(raw_message, content, state) do
     case ensure_session(raw_message, session_key(raw_message), state) do
       {:ok, session_id, updated_state} ->
-        case updated_state.agent_loop.process_message(session_id, content) do
-          {:ok, _response} ->
-            updated_state
-
-          {:error, reason} ->
-            Logger.warning("Discord agent loop failed: #{inspect(reason)}")
-            updated_state
-        end
+        start_agent_loop_task(updated_state, session_id, content)
+        updated_state
 
       {:error, reason, updated_state} ->
         Logger.warning("Discord session unavailable: #{inspect(reason)}")
@@ -244,13 +248,32 @@ defmodule ElixirClaw.Channels.Discord do
     end
   end
 
+  defp start_agent_loop_task(state, session_id, content) do
+    Task.start(fn ->
+      allow_test_mocks(state)
+
+      case state.agent_loop.process_message(session_id, content) do
+        {:ok, _response} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("Discord agent loop failed: #{inspect(reason)}")
+      end
+    end)
+  end
+
   defp start_new_session(raw_message, state) do
     key = session_key(raw_message)
 
-    case Map.get(state.session_by_user_channel, key) do
-      nil -> :ok
-      existing_session_id -> state.session_manager.end_session(existing_session_id)
-    end
+    state =
+      case Map.get(state.session_by_user_channel, key) do
+        nil ->
+          state
+
+        existing_session_id ->
+          :ok = state.session_manager.end_session(existing_session_id)
+          drop_session(state, key, existing_session_id)
+      end
 
     case create_session(raw_message, key, state) do
       {:ok, _session_id, updated_state} ->
@@ -261,6 +284,44 @@ defmodule ElixirClaw.Channels.Discord do
         Logger.warning("Discord failed to create new session: #{inspect(reason)}")
         updated_state
     end
+  end
+
+  defp approve_tools_command(raw_message, content, state) do
+    key = session_key(raw_message)
+    tool_names = parse_approved_tool_names(content)
+
+    case Map.get(state.session_by_user_channel, key) do
+      nil ->
+        _ = state.api.create_message(channel_id(raw_message), "No active session to approve tools for.")
+        state
+
+      session_id when tool_names == [] ->
+        _ = state.api.create_message(channel_id(raw_message), "Usage: !approve <tool...>")
+        put_session_mapping(state, key, session_id, raw_message)
+
+      session_id ->
+        case state.session_manager.approve_tools(session_id, tool_names) do
+          :ok ->
+            _ = state.api.create_message(channel_id(raw_message), approval_message(tool_names))
+            put_session_mapping(state, key, session_id, raw_message)
+
+          {:error, reason} ->
+            Logger.warning("Discord failed to approve tools: #{inspect(reason)}")
+            state
+        end
+    end
+  end
+
+  defp drop_session(state, key, session_id) do
+    topic = topic(session_id)
+    MessageBus.unsubscribe(topic)
+
+    %{
+      state
+      | session_by_user_channel: Map.delete(state.session_by_user_channel, key),
+        route_by_session: Map.delete(state.route_by_session, session_id),
+        subscriptions: MapSet.delete(state.subscriptions, topic)
+    }
   end
 
   defp ensure_session(raw_message, key, state) do
@@ -366,6 +427,21 @@ defmodule ElixirClaw.Channels.Discord do
 
   defp notify_test(%{test_pid: pid}, message) when is_pid(pid), do: send(pid, message)
   defp notify_test(_state, _message), do: :ok
+
+  defp parse_approved_tool_names(content) do
+    content
+    |> String.replace_prefix("!approve", "")
+    |> String.trim()
+    |> String.split(~r/\s+/, trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq()
+    |> Enum.sort()
+  end
+
+  defp approval_message(tool_names) do
+    "Approved tools: #{Enum.join(tool_names, ", ")}"
+  end
 
   defp command?(content, command), do: String.starts_with?(String.trim_leading(content), command)
 

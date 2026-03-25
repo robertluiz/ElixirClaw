@@ -7,7 +7,9 @@ if Code.ensure_loaded?(ElixirClaw.Channels.Discord.API) do
 end
 
 if Code.ensure_loaded?(ElixirClaw.Channels.Discord.SessionManager) do
-  Mox.defmock(ElixirClaw.MockDiscordSessionManager, for: ElixirClaw.Channels.Discord.SessionManager)
+  Mox.defmock(ElixirClaw.MockDiscordSessionManager,
+    for: ElixirClaw.Channels.Discord.SessionManager
+  )
 end
 
 if Code.ensure_loaded?(ElixirClaw.Channels.Discord.AgentLoop) do

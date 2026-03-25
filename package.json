@@ -1,0 +1,8 @@
+{
+  "name": "elixir-claw-cozo-bridge",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "cozo-node": "0.7.6"
+  }
+}

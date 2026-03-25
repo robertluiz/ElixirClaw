@@ -19,7 +19,8 @@ defmodule ElixirClaw.Tools.Registry do
 
   def register(tool), do: register(__MODULE__, tool)
 
-  def register(server, tool) when is_atom(server) and (is_atom(tool) or is_struct(tool, ToolWrapper)) do
+  def register(server, tool)
+      when is_atom(server) and (is_atom(tool) or is_struct(tool, ToolWrapper)) do
     GenServer.call(server, {:register, tool})
   end
 
@@ -46,6 +47,7 @@ defmodule ElixirClaw.Tools.Registry do
   def execute(name, params, context, server)
       when is_binary(name) and is_map(params) and is_map(context) and is_atom(server) do
     with {:ok, tool} <- get(name, server),
+         :ok <- authorize_tool(tool, name, context),
          :ok <- validate_params(tool, params) do
       timeout_ms = timeout_ms(tool)
       max_output_bytes = max_output_bytes(tool)
@@ -80,10 +82,15 @@ defmodule ElixirClaw.Tools.Registry do
   def to_provider_format, do: to_provider_format(__MODULE__)
 
   def to_provider_format(server) when is_atom(server) do
+    to_provider_format(server, %{})
+  end
+
+  def to_provider_format(server, context) when is_atom(server) and is_map(context) do
     server
     |> list()
-    |> Enum.map(&get(&1, server))
-    |> Enum.map(fn {:ok, tool} ->
+    |> filter_tool_names_for_context(context)
+    |> Enum.map(fn name -> {name, get(name, server)} end)
+    |> Enum.map(fn {_name, {:ok, tool}} ->
       %{
         type: "function",
         function: %{
@@ -93,6 +100,35 @@ defmodule ElixirClaw.Tools.Registry do
         }
       }
     end)
+  end
+
+  defp filter_tool_names_for_context(tool_names, context) do
+    case allowed_mcp_servers(context) do
+      :all -> tool_names
+      allowed_servers -> Enum.filter(tool_names, &tool_name_allowed?(&1, allowed_servers))
+    end
+  end
+
+  defp tool_name_allowed?("mcp:" <> rest, allowed_servers) do
+    server_name = rest |> String.split(":", parts: 2) |> List.first()
+    server_name in allowed_servers
+  end
+
+  defp tool_name_allowed?(name, _allowed_servers), do: not String.starts_with?(name, "mcp:")
+
+  defp allowed_mcp_servers(context) do
+    metadata = Map.get(context, "metadata", Map.get(context, :metadata, %{}))
+
+    with metadata when is_map(metadata) <- metadata,
+         task_agent_name when is_binary(task_agent_name) <- Map.get(metadata, "active_task_agent"),
+         runtime_agents <- Map.get(metadata, "runtime_task_agents", []),
+         {:ok, task_agent} <- ElixirClaw.Agent.TaskAgent.fetch(task_agent_name, runtime_agents),
+         servers when is_list(servers) <- Map.get(task_agent, :mcp_servers, []),
+         true <- servers != [] do
+      servers
+    else
+      _ -> :all
+    end
   end
 
   @impl true
@@ -134,6 +170,14 @@ defmodule ElixirClaw.Tools.Registry do
     end
   end
 
+  defp authorize_tool(tool, name, context) do
+    if tool_allowed?(tool, name, context) do
+      :ok
+    else
+      {:error, {:approval_required, name}}
+    end
+  end
+
   defp timeout_ms(%ToolWrapper{} = tool), do: ToolWrapper.timeout_ms(tool)
 
   defp timeout_ms(tool_module) do
@@ -163,8 +207,61 @@ defmodule ElixirClaw.Tools.Registry do
   defp parameters_schema(%ToolWrapper{} = tool), do: ToolWrapper.parameters_schema(tool)
   defp parameters_schema(tool_module), do: apply(tool_module, :parameters_schema, [])
 
-  defp execute_tool(%ToolWrapper{} = tool, params, context), do: ToolWrapper.execute(tool, params, context)
-  defp execute_tool(tool_module, params, context), do: apply(tool_module, :execute, [params, context])
+  defp risk_tier(%ToolWrapper{} = _tool, name) when is_binary(name) do
+    configured_risk_tier(name) || :standard
+  end
+
+  defp risk_tier(tool_module, name) when is_binary(name) do
+    configured_risk_tier(name) || callback_risk_tier(tool_module)
+  end
+
+  defp callback_risk_tier(tool_module) do
+    if function_exported?(tool_module, :risk_tier, 0) do
+      apply(tool_module, :risk_tier, [])
+    else
+      :standard
+    end
+  end
+
+  defp tool_allowed?(tool, name, context) do
+    case risk_tier(tool, name) do
+      :privileged -> approved_tool?(name, context)
+      _other -> true
+    end
+  end
+
+  defp configured_risk_tier(name) do
+    :elixir_claw
+    |> Application.get_env(:security, %{})
+    |> Map.get("tool_policies", %{})
+    |> Map.get(name)
+    |> case do
+      "privileged" -> :privileged
+      "standard" -> :standard
+      _other -> nil
+    end
+  end
+
+  defp approved_tool?(name, context) do
+    metadata = Map.get(context, "metadata", Map.get(context, :metadata, %{}))
+
+    approved_tools =
+      case metadata do
+        metadata when is_map(metadata) ->
+          Map.get(metadata, "approved_tools", Map.get(metadata, :approved_tools, []))
+
+        _other ->
+          []
+      end
+
+    name in List.wrap(approved_tools)
+  end
+
+  defp execute_tool(%ToolWrapper{} = tool, params, context),
+    do: ToolWrapper.execute(tool, params, context)
+
+  defp execute_tool(tool_module, params, context),
+    do: apply(tool_module, :execute, [params, context])
 
   defp truncate_output(output, max_output_bytes) when byte_size(output) > max_output_bytes do
     binary_part(output, 0, max_output_bytes) <> @truncation_marker

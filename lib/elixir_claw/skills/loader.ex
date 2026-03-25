@@ -98,18 +98,16 @@ defmodule ElixirClaw.Skills.Loader do
   defp parse_frontmatter_line(line) do
     trimmed = String.trim(line)
 
-    cond do
-      trimmed == "" ->
-        :skip
+    if trimmed == "" do
+      :skip
+    else
+      case String.split(trimmed, ":", parts: 2) do
+        [key, value] ->
+          {:ok, String.trim(key), parse_value(String.trim(value))}
 
-      true ->
-        case String.split(trimmed, ":", parts: 2) do
-          [key, value] ->
-            {:ok, String.trim(key), parse_value(String.trim(value))}
-
-          _ ->
-            {:error, :invalid_frontmatter}
-        end
+        _ ->
+          {:error, :invalid_frontmatter}
+      end
     end
   end
 

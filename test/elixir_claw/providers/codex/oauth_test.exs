@@ -45,7 +45,10 @@ defmodule ElixirClaw.Providers.Codex.OAuthTest do
     assert pkce.challenge == expected_challenge
   end
 
-  test "auth_url/1 includes required OAuth params", %{client_id: client_id, redirect_uri: redirect_uri} do
+  test "auth_url/1 includes required OAuth params", %{
+    client_id: client_id,
+    redirect_uri: redirect_uri
+  } do
     url =
       OAuth.auth_url(
         client_id: client_id,
@@ -106,7 +109,9 @@ defmodule ElixirClaw.Providers.Codex.OAuthTest do
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       params = URI.decode_query(body)
 
-      assert ["application/x-www-form-urlencoded"] = Plug.Conn.get_req_header(conn, "content-type")
+      assert ["application/x-www-form-urlencoded"] =
+               Plug.Conn.get_req_header(conn, "content-type")
+
       assert params["grant_type"] == "authorization_code"
       assert params["code"] == "auth-code"
       assert params["code_verifier"] == "verifier-secret"
@@ -126,7 +131,12 @@ defmodule ElixirClaw.Providers.Codex.OAuthTest do
     end)
 
     assert {:ok,
-            %{access_token: "test_token", refresh_token: "test_refresh", expires_in: 3600, token_type: "Bearer"}} =
+            %{
+              access_token: "test_token",
+              refresh_token: "test_refresh",
+              expires_in: 3600,
+              token_type: "Bearer"
+            }} =
              OAuth.exchange_code("auth-code", "verifier-secret",
                client_id: client_id,
                redirect_uri: redirect_uri,
@@ -134,7 +144,10 @@ defmodule ElixirClaw.Providers.Codex.OAuthTest do
              )
   end
 
-  test "refresh_token/2 sends the refresh_token grant type", %{bypass: bypass, client_id: client_id} do
+  test "refresh_token/2 sends the refresh_token grant type", %{
+    bypass: bypass,
+    client_id: client_id
+  } do
     Bypass.expect_once(bypass, "POST", "/oauth/token", fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       params = URI.decode_query(body)
@@ -186,8 +199,7 @@ defmodule ElixirClaw.Providers.Codex.OAuthTest do
                       status: 401,
                       body: %{
                         "error" => %{
-                          "message" =>
-                            "failed #{access_token} #{refresh_token} #{code_verifier}"
+                          "message" => "failed #{access_token} #{refresh_token} #{code_verifier}"
                         }
                       }
                     }}

@@ -1,7 +1,7 @@
 defmodule ElixirClaw.TypesTest do
   use ExUnit.Case, async: true
 
-  alias ElixirClaw.Types.{Message, Session, ToolCall, ProviderResponse, TokenUsage}
+  alias ElixirClaw.Types.{Message, ProviderResponse, Session, TokenUsage, ToolCall}
 
   describe "Message" do
     test "struct enforces required fields" do

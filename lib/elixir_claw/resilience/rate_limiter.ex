@@ -10,7 +10,8 @@ defmodule ElixirClaw.Resilience.RateLimiter do
     GenServer.start_link(__MODULE__, opts, opts)
   end
 
-  @spec check_and_consume(GenServer.server(), String.t(), pos_integer()) :: :ok | {:error, :rate_limited}
+  @spec check_and_consume(GenServer.server(), String.t(), pos_integer()) ::
+          :ok | {:error, :rate_limited}
   def check_and_consume(server, entity_id, max_per_minute)
       when is_binary(entity_id) and is_integer(max_per_minute) and max_per_minute > 0 do
     GenServer.call(server, {:check_and_consume, entity_id, max_per_minute})
@@ -33,11 +34,17 @@ defmodule ElixirClaw.Resilience.RateLimiter do
 
     case refilled_bucket.tokens >= 1.0 do
       true ->
-        next_bucket = %{refilled_bucket | tokens: refilled_bucket.tokens - 1.0, updated_at_ms: now_ms}
+        next_bucket = %{
+          refilled_bucket
+          | tokens: refilled_bucket.tokens - 1.0,
+            updated_at_ms: now_ms
+        }
+
         {:reply, :ok, put_bucket(state, entity_id, next_bucket)}
 
       false ->
-        {:reply, {:error, :rate_limited}, put_bucket(state, entity_id, %{refilled_bucket | updated_at_ms: now_ms})}
+        {:reply, {:error, :rate_limited},
+         put_bucket(state, entity_id, %{refilled_bucket | updated_at_ms: now_ms})}
     end
   end
 

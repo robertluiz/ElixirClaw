@@ -3,11 +3,11 @@ defmodule ElixirClaw.Agent.Loop do
 
   require Logger
 
-  import Ecto.Query
-
   alias ElixirClaw.Agent.ContextBuilder
   alias ElixirClaw.Bus.MessageBus
+  alias ElixirClaw.Providers
   alias ElixirClaw.Repo
+  alias ElixirClaw.Security.Canary
   alias ElixirClaw.Schema.Message, as: MessageSchema
   alias ElixirClaw.Session.Manager
   alias ElixirClaw.Tools.Registry
@@ -25,21 +25,23 @@ defmodule ElixirClaw.Agent.Loop do
     sanitized_user_message = ContextBuilder.sanitize_user_content(user_message_text)
 
     with {:ok, %Session{} = session} <- Manager.get_session(session_id),
-         {:ok, provider} <- resolve_provider(),
+         execution_profile = execution_profile(session),
+         {:ok, provider} <- resolve_provider(session, execution_profile),
          %Session{} = session_with_history <- load_session_history(session),
-         {messages, _metadata} <-
-           ContextBuilder.build_context(session_with_history, [],
-             user_message: sanitized_user_message
-           ),
-         {:ok, %ProviderResponse{} = response} <-
-           run_tool_loop(provider_messages(messages), provider, provider_tools(),
-             session: session,
-             session_id: session_id,
-             model: session.model,
-             tool_registry: tool_registry(),
-             max_iterations: max_iterations()
-           ) do
-      normalized_response = normalize_final_response(response)
+           {messages, _metadata} <-
+              ContextBuilder.build_context(session_with_history, [],
+                system_prompt: Canary.system_prompt(session_id),
+               user_message: sanitized_user_message
+             ),
+           {:ok, %ProviderResponse{} = response} <-
+             run_tool_loop(provider_messages(messages), provider, provider_tools(session),
+               session: session,
+               session_id: session_id,
+               model: execution_profile.model,
+              tool_registry: tool_registry(),
+              max_iterations: max_iterations()
+            ) do
+      normalized_response = response |> normalize_final_response() |> protect_response(session_id)
 
       persist_message!(session_id, "user", sanitized_user_message)
       persist_message!(session_id, "assistant", normalized_response.content)
@@ -82,6 +84,7 @@ defmodule ElixirClaw.Agent.Loop do
               }
 
               tool_messages = execute_tool_calls(tool_calls, opts[:session], opts[:tool_registry])
+              index_tool_messages(opts[:session].id, tool_calls, tool_messages)
 
               run_tool_loop(
                 messages ++ [assistant_message] ++ tool_messages,
@@ -106,13 +109,7 @@ defmodule ElixirClaw.Agent.Loop do
   end
 
   defp load_session_history(%Session{} = session) do
-    history =
-      from(message in MessageSchema,
-        where: message.session_id == ^session.id,
-        order_by: [asc: message.inserted_at, asc: message.id]
-      )
-      |> Repo.all()
-      |> Enum.map(&to_context_message/1)
+    history = Repo.list_session_messages(session.id) |> Enum.map(&to_context_message/1)
 
     %{session | messages: history}
   end
@@ -136,14 +133,39 @@ defmodule ElixirClaw.Agent.Loop do
                tool_call.arguments,
                tool_context(session),
                tool_registry
-             ) do
-          {:ok, output} -> output
-          {:error, reason} -> "Tool execution failed: #{inspect(reason)}"
+              ) do
+          {:ok, output} -> output |> ContextBuilder.sanitize_user_content() |> ContextBuilder.wrap_tool_output()
+
+          {:error, {:approval_required, tool_name}} ->
+            :ok = Manager.request_tool_approval(session.id, tool_name)
+
+            approval_required_message(tool_name)
+            |> ContextBuilder.sanitize_user_content()
+            |> ContextBuilder.wrap_tool_output()
+
+          {:error, reason} ->
+            "Tool execution failed: #{inspect(reason)}"
+            |> ContextBuilder.sanitize_user_content()
+            |> ContextBuilder.wrap_tool_output()
         end
 
       %{role: "tool", tool_call_id: tool_call.id, content: result}
     end)
   end
+
+  defp index_tool_messages(session_id, tool_calls, tool_messages)
+       when is_binary(session_id) and is_list(tool_calls) and is_list(tool_messages) do
+    Enum.zip(tool_calls, tool_messages)
+    |> Enum.each(fn {tool_call, tool_message} ->
+      ElixirClaw.Agent.MemoryGraphIndexer.index_execution_async(session_id, %{
+        name: tool_call.name,
+        content: tool_message.content,
+        metadata: %{"tool_call_id" => tool_call.id, "arguments" => tool_call.arguments}
+      })
+    end)
+  end
+
+  defp index_tool_messages(_session_id, _tool_calls, _tool_messages), do: :ok
 
   defp tool_context(%Session{} = session) do
     %{
@@ -165,8 +187,8 @@ defmodule ElixirClaw.Agent.Loop do
     end)
   end
 
-  defp provider_tools do
-    case Registry.to_provider_format(tool_registry()) do
+  defp provider_tools(%Session{} = session) do
+    case Registry.to_provider_format(tool_registry(), tool_context(session)) do
       [] -> []
       tools -> tools
     end
@@ -204,6 +226,25 @@ defmodule ElixirClaw.Agent.Loop do
     %ProviderResponse{response | content: response.content || ""}
   end
 
+  defp protect_response(%ProviderResponse{} = response, session_id) do
+    if Canary.leaked?(response.content, session_id) do
+      %ProviderResponse{response | content: Canary.blocked_message(), tool_calls: nil}
+    else
+      case Manager.get_session(session_id) do
+        {:ok, %Session{metadata: %{"pending_tool_approvals" => [tool_name | _]}}}
+        when is_binary(tool_name) ->
+          %ProviderResponse{response | content: approval_required_message(tool_name), tool_calls: nil}
+
+        _other ->
+          response
+      end
+    end
+  end
+
+  defp approval_required_message(tool_name) do
+    "Approval required for tool '#{tool_name}'. Run /approve #{tool_name} to continue."
+  end
+
   defp persist_message!(session_id, role, content) do
     attrs = %{
       session_id: session_id,
@@ -212,9 +253,7 @@ defmodule ElixirClaw.Agent.Loop do
       token_count: ContextBuilder.estimate_tokens(content)
     }
 
-    %MessageSchema{}
-    |> MessageSchema.changeset(attrs)
-    |> Repo.insert!()
+    _message = Repo.insert_message(attrs)
 
     :ok
   end
@@ -235,10 +274,31 @@ defmodule ElixirClaw.Agent.Loop do
     })
   end
 
-  defp resolve_provider do
+  defp resolve_provider(%Session{} = session, execution_profile) do
     case Keyword.get(config(), :provider) do
+      nil -> resolve_session_provider(execution_profile.provider || session.provider)
       provider when is_atom(provider) -> {:ok, provider}
-      _missing_provider -> {:error, :provider_error}
+      _invalid_override -> {:error, :provider_error}
+    end
+  end
+
+  defp execution_profile(%Session{} = session) do
+    case Manager.effective_task_agent(session) do
+      {:ok, task_agent} ->
+        %{
+          provider: task_agent.provider || session.provider,
+          model: task_agent.model || session.model
+        }
+
+      {:error, :unknown_task_agent} ->
+        %{provider: session.provider, model: session.model}
+    end
+  end
+
+  defp resolve_session_provider(provider_name) do
+    case Providers.resolve(provider_name) do
+      {:ok, provider} -> {:ok, provider}
+      {:error, :unknown_provider} -> {:error, :provider_error}
     end
   end
 

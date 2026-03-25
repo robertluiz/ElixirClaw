@@ -3,10 +3,7 @@ defmodule ElixirClaw.OpenCode.Exporter do
   Exports ElixirClaw sessions to OpenCode via the HTTP API.
   """
 
-  import Ecto.Query
-
   alias ElixirClaw.Repo
-  alias ElixirClaw.Schema.Message, as: MessageSchema
   alias ElixirClaw.Session.Manager
   alias ElixirClaw.Types.{Message, Session}
 
@@ -31,14 +28,17 @@ defmodule ElixirClaw.OpenCode.Exporter do
       when is_binary(opencode_session_id) and is_list(opts) do
     with {:ok, request_options} <- base_request_options(opts),
          {:ok, response} <-
-           request(fn ->
-             Req.post(
-               Keyword.merge(request_options,
-                 url: session_message_url(opencode_session_id, opts),
-                 json: message_payload(message)
+           request(
+             fn ->
+               Req.post(
+                 Keyword.merge(request_options,
+                   url: session_message_url(opencode_session_id, opts),
+                   json: message_payload(message)
+                 )
                )
-             )
-           end, timeout(opts)) do
+             end,
+             timeout(opts)
+           ) do
       case response.status do
         status when status in 200..299 -> :ok
         401 -> {:error, :unauthorized}
@@ -53,7 +53,10 @@ defmodule ElixirClaw.OpenCode.Exporter do
   def check_connection(opts \\ []) when is_list(opts) do
     with {:ok, request_options} <- base_request_options(opts),
          {:ok, response} <-
-           request(fn -> Req.get(Keyword.merge(request_options, url: health_check_url(opts))) end, timeout(opts)) do
+           request(
+             fn -> Req.get(Keyword.merge(request_options, url: health_check_url(opts))) end,
+             timeout(opts)
+           ) do
       case response.status do
         status when status in 200..299 -> :ok
         401 -> {:error, :unauthorized}
@@ -67,14 +70,17 @@ defmodule ElixirClaw.OpenCode.Exporter do
   defp create_remote_session(%Session{} = session, opts) do
     with {:ok, request_options} <- base_request_options(opts),
          {:ok, response} <-
-           request(fn ->
-             Req.post(
-               Keyword.merge(request_options,
-                 url: session_url(opts),
-                 json: %{title: session.id, directory: "."}
+           request(
+             fn ->
+               Req.post(
+                 Keyword.merge(request_options,
+                   url: session_url(opts),
+                   json: %{title: session.id, directory: "."}
+                 )
                )
-             )
-           end, timeout(opts)),
+             end,
+             timeout(opts)
+           ),
          :ok <- validate_status(response),
          {:ok, body} <- decode_body(response.body),
          {:ok, id} <- extract_session_id(body) do
@@ -99,15 +105,11 @@ defmodule ElixirClaw.OpenCode.Exporter do
   end
 
   defp list_session_messages(session_id) do
-    from(message in MessageSchema,
-      where: message.session_id == ^session_id,
-      order_by: [asc: message.inserted_at, asc: message.id]
-    )
-    |> Repo.all()
+    Repo.list_session_messages(session_id)
     |> Enum.map(&to_message/1)
   end
 
-  defp to_message(%MessageSchema{} = message) do
+  defp to_message(message) do
     %Message{
       role: message.role,
       content: message.content,
@@ -179,7 +181,8 @@ defmodule ElixirClaw.OpenCode.Exporter do
     end
   end
 
-  defp request(fun, timeout_ms) when is_function(fun, 0) and is_integer(timeout_ms) and timeout_ms >= 0 do
+  defp request(fun, timeout_ms)
+       when is_function(fun, 0) and is_integer(timeout_ms) and timeout_ms >= 0 do
     parent = self()
     result_ref = make_ref()
 
@@ -207,6 +210,7 @@ defmodule ElixirClaw.OpenCode.Exporter do
     after
       timeout_ms + 1_000 ->
         Process.exit(pid, :kill)
+
         receive do
           {:DOWN, ^monitor_ref, :process, ^pid, _reason} -> :ok
         after
@@ -246,7 +250,8 @@ defmodule ElixirClaw.OpenCode.Exporter do
   defp session_url(opts), do: Keyword.fetch!(base_request_url(opts), :session)
 
   defp session_message_url(opencode_session_id, opts) do
-    Keyword.fetch!(base_request_url(opts), :session) <> "/" <> URI.encode(opencode_session_id) <> "/message"
+    Keyword.fetch!(base_request_url(opts), :session) <>
+      "/" <> URI.encode(opencode_session_id) <> "/message"
   end
 
   defp base_request_url(opts) do
@@ -261,13 +266,26 @@ defmodule ElixirClaw.OpenCode.Exporter do
 
   defp normalize_transport_error(reason, opts) do
     case root_reason(reason) do
-      :timeout -> timeout_or_connection_refused(opts)
-      :connect_timeout -> :timeout
-      :shutdown -> :timeout
-      :econnrefused -> :connection_refused
-      :nxdomain -> :connection_refused
-      other when other in [:closed, :econnaborted, :ehostunreach, :enetunreach] -> :connection_refused
-      _other -> reason
+      :timeout ->
+        timeout_or_connection_refused(opts)
+
+      :connect_timeout ->
+        :timeout
+
+      :shutdown ->
+        :timeout
+
+      :econnrefused ->
+        :connection_refused
+
+      :nxdomain ->
+        :connection_refused
+
+      other when other in [:closed, :econnaborted, :ehostunreach, :enetunreach] ->
+        :connection_refused
+
+      _other ->
+        reason
     end
   end
 

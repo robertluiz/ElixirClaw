@@ -1,8 +1,6 @@
 defmodule ElixirClaw.IntegrationTest do
   use ExUnit.Case, async: false
 
-  import Ecto.Query
-  import ExUnit.CaptureLog
   import Mox
 
   alias ElixirClaw.Agent.ContextBuilder
@@ -12,6 +10,7 @@ defmodule ElixirClaw.IntegrationTest do
   alias ElixirClaw.Channels.CLI
   alias ElixirClaw.MCP.ToolWrapper
   alias ElixirClaw.Repo
+  alias ElixirClaw.Security.Canary
   alias ElixirClaw.Schema.Message, as: MessageSchema
   alias ElixirClaw.Schema.Session, as: SessionSchema
   alias ElixirClaw.Session.Manager
@@ -28,8 +27,7 @@ defmodule ElixirClaw.IntegrationTest do
   setup do
     Mox.set_mox_global()
 
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    create_test_tables!()
+    Repo.reset!()
     Repo.delete_all(MessageSchema)
     Repo.delete_all(SessionSchema)
     kill_session_processes()
@@ -61,7 +59,8 @@ defmodule ElixirClaw.IntegrationTest do
   end
 
   test "simple chat flows from CLI input through Agent Loop and publishes the assistant reply" do
-    assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "integration-cli"))
+    assert {:ok, session_id} =
+             Manager.start_session(base_attrs(channel_user_id: "integration-cli"))
 
     assert :ok = MessageBus.subscribe("channel:cli")
     assert :ok = MessageBus.subscribe("session:#{session_id}")
@@ -90,12 +89,17 @@ defmodule ElixirClaw.IntegrationTest do
 
     on_exit(fn -> if Process.alive?(cli_pid), do: GenServer.stop(cli_pid) end)
 
-    assert :ok = Ecto.Adapters.SQL.Sandbox.allow(Repo, self(), cli_pid)
     allow(ElixirClaw.MockProvider, self(), cli_pid)
 
     expect(ElixirClaw.MockProvider, :chat, fn messages, opts ->
-      assert [%{role: "user", content: "hello world"}] =
+      assert [
+               %{role: "system", content: system_prompt},
+               %{role: "user", content: user_content}
+             ] =
                Enum.map(messages, &Map.take(&1, [:role, :content]))
+
+      assert system_prompt =~ Canary.token_for_session(session_id)
+      assert user_content == "<untrusted_user_input>hello world</untrusted_user_input>"
 
       assert Keyword.get(opts, :model) == "gpt-4o-mini"
 
@@ -122,7 +126,10 @@ defmodule ElixirClaw.IntegrationTest do
     tool_registry: tool_registry
   } do
     assert :ok = ToolRegistry.register(tool_registry, IntegrationMockToolAdapter)
-    assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "integration-tool"))
+
+    assert {:ok, session_id} =
+             Manager.start_session(base_attrs(channel_user_id: "integration-tool"))
+
     assert :ok = MessageBus.subscribe("session:#{session_id}")
 
     expect(ElixirClaw.MockTool, :execute, fn %{"query" => "otp"}, context ->
@@ -135,7 +142,10 @@ defmodule ElixirClaw.IntegrationTest do
         0 ->
           Process.put(:tool_round_trip_call, 1)
 
-          assert [%{role: "user", content: "run tool"}] =
+          assert [
+                   %{role: "system", content: _system_prompt},
+                   %{role: "user", content: "<untrusted_user_input>run tool</untrusted_user_input>"}
+                 ] =
                    Enum.map(messages, &Map.take(&1, [:role, :content]))
 
           assert Keyword.get(opts, :tools) == [
@@ -164,11 +174,19 @@ defmodule ElixirClaw.IntegrationTest do
 
         1 ->
           assert [
-                   %{role: "user", content: "run tool"},
+                   %{role: "system", content: _system_prompt},
+                   %{role: "user", content: "<untrusted_user_input>run tool</untrusted_user_input>"},
                    %{role: "assistant", tool_calls: [%ToolCall{id: "tool-1", name: "test_tool"}]},
-                   %{role: "tool", tool_call_id: "tool-1", content: "tool-result:otp"}
-                 ] =
-                   Enum.map(messages, &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id]))
+                   %{
+                     role: "tool",
+                     tool_call_id: "tool-1",
+                     content: "<untrusted_tool_output>tool-result:otp</untrusted_tool_output>"
+                   }
+                  ] =
+                    Enum.map(
+                      messages,
+                     &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id])
+                   )
 
           {:ok,
            %ProviderResponse{
@@ -190,13 +208,19 @@ defmodule ElixirClaw.IntegrationTest do
   end
 
   test "multi-turn conversation rebuilds context with growing history across turns" do
-    assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "integration-history"))
+    assert {:ok, session_id} =
+             Manager.start_session(base_attrs(channel_user_id: "integration-history"))
 
     expect(ElixirClaw.MockProvider, :chat, 2, fn messages, _opts ->
       case Process.get(:multi_turn_call, 0) do
         0 ->
           Process.put(:multi_turn_call, 1)
-          assert [%{role: "user", content: "first turn"}] = Enum.map(messages, &Map.take(&1, [:role, :content]))
+
+          assert [
+                   %{role: "system", content: _system_prompt},
+                   %{role: "user", content: "<untrusted_user_input>first turn</untrusted_user_input>"}
+                 ] =
+                   Enum.map(messages, &Map.take(&1, [:role, :content]))
 
           {:ok,
            %ProviderResponse{
@@ -207,10 +231,10 @@ defmodule ElixirClaw.IntegrationTest do
         1 ->
           history = MapSet.new(Enum.map(messages, &{&1.role, &1.content}))
 
-          assert MapSet.member?(history, {"user", "first turn"})
+          assert MapSet.member?(history, {"user", "<untrusted_user_input>first turn</untrusted_user_input>"})
           assert MapSet.member?(history, {"assistant", "first reply"})
-          assert MapSet.member?(history, {"user", "second turn"})
-          assert length(messages) == 3
+          assert MapSet.member?(history, {"user", "<untrusted_user_input>second turn</untrusted_user_input>"})
+          assert length(messages) == 4
 
           {:ok,
            %ProviderResponse{
@@ -234,7 +258,9 @@ defmodule ElixirClaw.IntegrationTest do
   end
 
   test "session management supports /new while previously persisted sessions remain retrievable" do
-    assert {:ok, old_session_id} = Manager.start_session(base_attrs(channel_user_id: "existing-user"))
+    assert {:ok, old_session_id} =
+             Manager.start_session(base_attrs(channel_user_id: "existing-user"))
+
     assert :new_session = CLI.handle_incoming("/new")
     assert {:ok, new_session_id} = Manager.start_session(base_attrs(channel_user_id: "new-user"))
 
@@ -250,9 +276,26 @@ defmodule ElixirClaw.IntegrationTest do
   test "memory consolidation summarizes long histories and replaces archived messages" do
     session = Factory.insert_session!(channel_user_id: "memory-user")
 
-    Factory.insert_message!(session_id: session.id, role: "user", content: String.duplicate("a", 80), token_count: 25)
-    Factory.insert_message!(session_id: session.id, role: "assistant", content: String.duplicate("b", 80), token_count: 25)
-    Factory.insert_message!(session_id: session.id, role: "user", content: String.duplicate("c", 80), token_count: 25)
+    Factory.insert_message!(
+      session_id: session.id,
+      role: "user",
+      content: String.duplicate("a", 80),
+      token_count: 25
+    )
+
+    Factory.insert_message!(
+      session_id: session.id,
+      role: "assistant",
+      content: String.duplicate("b", 80),
+      token_count: 25
+    )
+
+    Factory.insert_message!(
+      session_id: session.id,
+      role: "user",
+      content: String.duplicate("c", 80),
+      token_count: 25
+    )
 
     summary = "Conversation summary for archived integration messages."
 
@@ -272,7 +315,12 @@ defmodule ElixirClaw.IntegrationTest do
     assert {:ok, %{summary: ^summary, messages_archived: 3}} =
              Memory.consolidate(session.id, ElixirClaw.MockProvider, threshold: 50)
 
-    assert [%{role: "system", content: ^summary}] =
+    assert [
+             %{
+               role: "assistant",
+               content: "<untrusted_memory_summary>" <> ^summary <> "</untrusted_memory_summary>"
+             }
+           ] =
              session.id
              |> persisted_messages()
              |> Enum.map(&Map.take(&1, [:role, :content]))
@@ -316,7 +364,10 @@ defmodule ElixirClaw.IntegrationTest do
         0 ->
           Process.put(:mcp_round_trip_call, 1)
 
-          assert [%{role: "user", content: "call mcp"}] =
+          assert [
+                   %{role: "system", content: _system_prompt},
+                   %{role: "user", content: "<untrusted_user_input>call mcp</untrusted_user_input>"}
+                 ] =
                    Enum.map(messages, &Map.take(&1, [:role, :content]))
 
           assert Enum.any?(Keyword.get(opts, :tools, []), fn tool ->
@@ -338,21 +389,29 @@ defmodule ElixirClaw.IntegrationTest do
 
         1 ->
           assert [
-                   %{role: "user", content: "call mcp"},
+                   %{role: "system", content: _system_prompt},
+                   %{role: "user", content: "<untrusted_user_input>call mcp</untrusted_user_input>"},
                    %{
                       role: "assistant",
                       content: "",
-                      tool_calls: [
-                        %ToolCall{
-                          id: "mcp-call-1",
-                          name: "mcp:demo-http:echo",
-                          arguments: %{"text" => "ping"}
-                        }
-                      ]
-                    },
-                    %{role: "tool", tool_call_id: "mcp-call-1", content: "pong"}
-                 ] =
-                   Enum.map(messages, &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id]))
+                     tool_calls: [
+                       %ToolCall{
+                         id: "mcp-call-1",
+                         name: "mcp:demo-http:echo",
+                         arguments: %{"text" => "ping"}
+                       }
+                     ]
+                   },
+                   %{
+                     role: "tool",
+                     tool_call_id: "mcp-call-1",
+                     content: "<untrusted_tool_output>pong</untrusted_tool_output>"
+                   }
+                  ] =
+                    Enum.map(
+                      messages,
+                     &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id])
+                   )
 
           {:ok,
            %ProviderResponse{
@@ -375,8 +434,14 @@ defmodule ElixirClaw.IntegrationTest do
     sanitized_input = ContextBuilder.sanitize_user_content(secret_input)
 
     expect(ElixirClaw.MockProvider, :chat, fn messages, _opts ->
-      assert [%{role: "user", content: ^sanitized_input}] =
+      assert [
+               %{role: "system", content: _system_prompt},
+               %{role: "user", content: wrapped_input}
+             ] =
                Enum.map(messages, &Map.take(&1, [:role, :content]))
+
+      assert wrapped_input ==
+               "<untrusted_user_input>#{sanitized_input}</untrusted_user_input>"
 
       {:ok,
        %ProviderResponse{
@@ -385,16 +450,14 @@ defmodule ElixirClaw.IntegrationTest do
        }}
     end)
 
-    log =
-      capture_log([level: :info], fn ->
-        assert {:ok, %ProviderResponse{content: "safe reply"}} =
-                 Loop.process_message(session_id, secret_input)
-      end)
+    assert {:ok, %ProviderResponse{content: "safe reply"}} =
+             Loop.process_message(session_id, secret_input)
 
-    assert log =~ "Session #{session_id}: 9 in / 3 out tokens"
-    SecurityHelpers.assert_no_secrets(log)
-    refute log =~ "sk-"
-    refute log =~ "Bearer "
+    persisted = Enum.map(persisted_messages(session_id), & &1.content) |> Enum.join("\n")
+    SecurityHelpers.assert_no_secrets(persisted)
+    refute persisted =~ "sk-"
+    refute persisted =~ "Bearer "
+    assert persisted =~ "safe reply"
   end
 
   defp base_attrs(overrides) do
@@ -411,11 +474,7 @@ defmodule ElixirClaw.IntegrationTest do
   end
 
   defp persisted_messages(session_id) do
-    from(message in MessageSchema,
-      where: message.session_id == ^session_id,
-      order_by: [asc: message.inserted_at, asc: message.id]
-    )
-    |> Repo.all()
+    Repo.list_session_messages(session_id)
   end
 
   defp unique_cli_name do
@@ -436,41 +495,6 @@ defmodule ElixirClaw.IntegrationTest do
     :exit, _reason -> :ok
   end
 
-  defp create_test_tables! do
-    Repo.query!("PRAGMA foreign_keys = ON")
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      channel TEXT NOT NULL,
-      channel_user_id TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      model TEXT,
-      token_count_in INTEGER NOT NULL DEFAULT 0,
-      token_count_out INTEGER NOT NULL DEFAULT 0,
-      metadata TEXT,
-      inserted_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-    """)
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
-      content TEXT NOT NULL,
-      tool_calls TEXT,
-      tool_call_id TEXT,
-      token_count INTEGER NOT NULL DEFAULT 0,
-      inserted_at TEXT NOT NULL,
-      updated_at TEXT,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
-    """)
-
-    Repo.query!("CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id)")
-  end
 end
 
 defmodule IntegrationMockToolAdapter do

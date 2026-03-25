@@ -36,16 +36,19 @@ defmodule ElixirClaw.ApplicationTest do
           spec |> Supervisor.child_spec([]) |> Map.fetch!(:start) |> elem(0)
         end)
 
-      assert modules == [
-               ElixirClaw.Repo,
-               Registry,
-               DynamicSupervisor,
-               Phoenix.PubSub.Supervisor,
-               Task.Supervisor,
-               ElixirClaw.Tools.Registry,
-               MCPSupervisor,
-               ChannelsSupervisor
-             ]
+       assert modules == [
+                ElixirClaw.Repo,
+                Registry,
+                DynamicSupervisor,
+                Phoenix.PubSub.Supervisor,
+                Task.Supervisor,
+                ElixirClaw.Tools.Registry,
+                ElixirClaw.Agent.MemoryGraphIndexer,
+                ElixirClaw.Providers.Codex.TokenManager,
+                ElixirClaw.Providers.Copilot.TokenManager,
+                MCPSupervisor,
+                ChannelsSupervisor
+              ]
     end
   end
 

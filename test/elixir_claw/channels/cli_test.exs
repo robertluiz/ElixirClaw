@@ -10,8 +10,7 @@ defmodule ElixirClaw.Channels.CLITest do
   alias ElixirClaw.Types.Message
 
   setup do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    create_test_tables!()
+    Repo.reset!()
     Repo.delete_all(ElixirClaw.Schema.Message)
     Repo.delete_all(SessionSchema)
     kill_session_processes()
@@ -82,6 +81,43 @@ defmodule ElixirClaw.Channels.CLITest do
       assert {:error, :missing_model_name} = CLI.handle_incoming("/model")
     end
 
+    test "lists available specialized task agents with /agents" do
+      assert {:task_agents, task_agents_text} = CLI.handle_incoming("/agents")
+
+      assert task_agents_text =~ "feature-builder"
+      assert task_agents_text =~ "bug-fixer"
+      assert task_agents_text =~ "code-reviewer"
+    end
+
+    test "activates a specialized task agent with /agent <name>" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "agent-user"))
+
+      assert {:active_task_agent, "feature-builder"} =
+               CLI.handle_incoming(%{text: "/agent feature-builder", session_id: session_id})
+
+      assert {:ok, session} = Manager.get_session(session_id)
+      assert session.metadata["active_task_agent"] == "feature-builder"
+    end
+
+    test "shows the current specialized task agent with /agent" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "agent-current"))
+      assert :ok = Manager.set_task_agent(session_id, "bug-fixer")
+
+      assert {:active_task_agent, "bug-fixer"} =
+               CLI.handle_incoming(%{text: "/agent", session_id: session_id})
+    end
+
+    test "disables the current specialized task agent with /agent off" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "agent-off"))
+      assert :ok = Manager.set_task_agent(session_id, "bug-fixer")
+
+      assert {:active_task_agent, :none} =
+               CLI.handle_incoming(%{text: "/agent off", session_id: session_id})
+
+      assert {:ok, session} = Manager.get_session(session_id)
+      refute Map.has_key?(session.metadata, "active_task_agent")
+    end
+
     test "returns formatted current session information for /session" do
       assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "cli-user"))
 
@@ -96,8 +132,69 @@ defmodule ElixirClaw.Channels.CLITest do
       assert session_text =~ "tokens: 0 in / 0 out"
     end
 
+    test "includes the active specialized task agent in session info" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "cli-agent-info"))
+      assert :ok = Manager.set_task_agent(session_id, "test-writer")
+
+      assert {:session, session_text} =
+               CLI.handle_incoming(%{text: "/session", session_id: session_id})
+
+      assert session_text =~ "task agent: test-writer"
+    end
+
     test "returns an error when /session is requested without a session id" do
       assert {:error, :missing_session_id} = CLI.handle_incoming(%{text: "/session"})
+    end
+
+    test "approves privileged tools for the active session with /approve" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "approve-user"))
+
+      assert {:approved_tools, ["bash", "privileged_tool"]} =
+               CLI.handle_incoming(%{text: "/approve bash privileged_tool", session_id: session_id})
+
+      assert {:ok, session} = Manager.get_session(session_id)
+      assert session.metadata["approved_tools"] == ["bash", "privileged_tool"]
+    end
+
+    test "returns an error when /approve is requested without a session id" do
+      assert {:error, :missing_session_id} = CLI.handle_incoming(%{text: "/approve bash"})
+    end
+
+    test "returns an error when /approve is missing tool names" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "approve-missing"))
+      assert {:error, :missing_tool_names} = CLI.handle_incoming(%{text: "/approve", session_id: session_id})
+    end
+
+    test "returns an error when /agent references an unknown specialized task agent" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "agent-missing"))
+
+      assert {:error, :unknown_task_agent} =
+               CLI.handle_incoming(%{text: "/agent imaginary-agent", session_id: session_id})
+    end
+
+    test "creates and activates a runtime specialized task agent with /agent create" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "agent-create"))
+
+      command =
+        "/agent create triage-helper --description First-pass triage --prompt Triage quickly --tasks classify,severity --model gpt-4o-mini --tier cheap --skill triage-skill --mcp docs --activate"
+
+      assert {:task_agent_created, created_name} =
+               CLI.handle_incoming(%{text: command, session_id: session_id})
+
+      assert created_name == "triage-helper"
+
+      assert {:ok, session} = Manager.get_session(session_id)
+      assert session.metadata["active_task_agent"] == "triage-helper"
+
+      assert [runtime_agent] = session.metadata["runtime_task_agents"]
+      assert runtime_agent["skills"] == [
+               %{
+                 "name" => "triage-skill",
+                 "content" => "Skill triage-skill attached to task agent triage-helper.",
+                 "token_estimate" => 0
+               }
+             ]
+      assert runtime_agent["mcp_servers"] == ["docs"]
     end
   end
 
@@ -159,38 +256,4 @@ defmodule ElixirClaw.Channels.CLITest do
     :exit, _reason -> :ok
   end
 
-  defp create_test_tables! do
-    Repo.query!("PRAGMA foreign_keys = ON")
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      channel TEXT NOT NULL,
-      channel_user_id TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      model TEXT,
-      token_count_in INTEGER NOT NULL DEFAULT 0,
-      token_count_out INTEGER NOT NULL DEFAULT 0,
-      metadata TEXT,
-      inserted_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-    """)
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
-      content TEXT NOT NULL,
-      tool_calls TEXT,
-      tool_call_id TEXT,
-      token_count INTEGER NOT NULL DEFAULT 0,
-      inserted_at TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
-    """)
-
-    Repo.query!("CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id)")
-  end
 end

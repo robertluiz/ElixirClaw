@@ -2,6 +2,7 @@ defmodule ElixirClaw.Session.Manager do
   @moduledoc false
 
   alias ElixirClaw.Repo
+  alias ElixirClaw.Agent.TaskAgent
   alias ElixirClaw.Schema.Session, as: SessionSchema
   alias ElixirClaw.Session.Worker
   alias ElixirClaw.Types.{Session, TokenUsage}
@@ -19,6 +20,7 @@ defmodule ElixirClaw.Session.Manager do
     else
       {:error, reason} = error ->
         cleanup_session_record(session_id)
+
         case reason do
           %Ecto.Changeset{} -> error
           _ -> {:error, reason}
@@ -31,7 +33,9 @@ defmodule ElixirClaw.Session.Manager do
     case lookup_pid(session_id) do
       {:ok, pid} ->
         safe_call(fn -> Worker.get_session(pid) end)
-      :error -> {:error, :not_found}
+
+      :error ->
+        {:error, :not_found}
     end
   end
 
@@ -60,6 +64,63 @@ defmodule ElixirClaw.Session.Manager do
     end
   end
 
+  @spec approve_tools(String.t(), [String.t()]) :: :ok | {:error, :not_found}
+  def approve_tools(session_id, tool_names) when is_binary(session_id) and is_list(tool_names) do
+    case lookup_pid(session_id) do
+      {:ok, pid} -> safe_call(fn -> Worker.approve_tools(pid, tool_names) end)
+      :error -> {:error, :not_found}
+    end
+  end
+
+  @spec request_tool_approval(String.t(), String.t()) :: :ok | {:error, :not_found}
+  def request_tool_approval(session_id, tool_name)
+      when is_binary(session_id) and is_binary(tool_name) do
+    case lookup_pid(session_id) do
+      {:ok, pid} -> safe_call(fn -> Worker.request_tool_approval(pid, tool_name) end)
+      :error -> {:error, :not_found}
+    end
+  end
+
+  @spec set_task_agent(String.t(), String.t()) :: :ok | {:error, :not_found | :unknown_task_agent}
+  def set_task_agent(session_id, task_agent_name)
+      when is_binary(session_id) and is_binary(task_agent_name) do
+    case lookup_pid(session_id) do
+      {:ok, pid} -> safe_call(fn -> Worker.set_task_agent(pid, task_agent_name) end)
+      :error -> {:error, :not_found}
+    end
+  end
+
+  @spec clear_task_agent(String.t()) :: :ok | {:error, :not_found}
+  def clear_task_agent(session_id) when is_binary(session_id) do
+    case lookup_pid(session_id) do
+      {:ok, pid} -> safe_call(fn -> Worker.clear_task_agent(pid) end)
+      :error -> {:error, :not_found}
+    end
+  end
+
+  @spec create_task_agent(String.t(), map()) :: {:ok, String.t()} | {:error, :not_found | term()}
+  def create_task_agent(session_id, attrs) when is_binary(session_id) and is_map(attrs) do
+    case lookup_pid(session_id) do
+      {:ok, pid} -> safe_call(fn -> Worker.create_task_agent(pid, attrs) end)
+      :error -> {:error, :not_found}
+    end
+  end
+
+  @spec put_metadata(String.t(), map()) :: :ok | {:error, :not_found}
+  def put_metadata(session_id, metadata_updates) when is_binary(session_id) and is_map(metadata_updates) do
+    case lookup_pid(session_id) do
+      {:ok, pid} -> safe_call(fn -> Worker.put_metadata(pid, metadata_updates) end)
+      :error -> {:error, :not_found}
+    end
+  end
+
+  @spec effective_task_agent(Session.t()) :: {:ok, TaskAgent.t()} | {:error, :unknown_task_agent}
+  def effective_task_agent(%Session{metadata: metadata}) when is_map(metadata) do
+    TaskAgent.fetch(Map.get(metadata, "active_task_agent", ""), Map.get(metadata, "runtime_task_agents", []))
+  end
+
+  def effective_task_agent(_session), do: {:error, :unknown_task_agent}
+
   defp create_session_record(session_id, attrs) do
     %SessionSchema{id: session_id}
     |> SessionSchema.changeset(attrs)
@@ -79,7 +140,11 @@ defmodule ElixirClaw.Session.Manager do
       max_calls_per_minute: max_calls_per_minute(attrs)
     ]
 
-    DynamicSupervisor.start_child(ElixirClaw.SessionSupervisor, {Worker, worker_opts})
+    with {:ok, _pid} = result <- DynamicSupervisor.start_child(ElixirClaw.SessionSupervisor, {Worker, worker_opts}) do
+      :ok = ElixirClaw.Agent.GraphMemory.seed_session_memory(persisted_session.id, persisted_session.metadata || %{})
+      _ = ElixirClaw.Agent.GraphMemory.refresh_session_summary(persisted_session.id, token_budget: 300)
+      result
+    end
   end
 
   defp schema_attrs(attrs) do
@@ -120,7 +185,8 @@ defmodule ElixirClaw.Session.Manager do
       [{pid, _value}] when is_pid(pid) ->
         if Process.alive?(pid), do: {:ok, pid}, else: :error
 
-      [] -> :error
+      [] ->
+        :error
     end
   end
 
@@ -132,7 +198,9 @@ defmodule ElixirClaw.Session.Manager do
 
   defp cleanup_session_record(session_id) do
     case Repo.get(SessionSchema, session_id) do
-      nil -> :ok
+      nil ->
+        :ok
+
       session ->
         _ = Repo.delete(session)
         :ok

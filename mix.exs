@@ -41,10 +41,12 @@ defmodule ElixirClaw.MixProject do
       {:nostrum, "~> 0.10", runtime: false},
       {:hermes_mcp, "~> 0.14"},
       {:jason, "~> 1.4"},
-      {:ecto_sqlite3, "~> 0.15"},
+      {:ecto, "~> 3.13"},
+      {:exqlite, "~> 0.35"},
       {:toml, "~> 0.7"},
       {:oauth2, "~> 2.1"},
       {:phoenix_pubsub, "~> 2.1"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mox, "~> 1.1", only: :test},
       {:bypass, "~> 2.1", only: :test}
     ]

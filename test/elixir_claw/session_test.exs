@@ -7,8 +7,7 @@ defmodule ElixirClaw.SessionTest do
   alias ElixirClaw.Types.{Session, TokenUsage}
 
   setup do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    create_test_tables!()
+    Repo.reset!()
     Repo.delete_all(ElixirClaw.Schema.Message)
     Repo.delete_all(SessionSchema)
     kill_session_processes()
@@ -95,6 +94,94 @@ defmodule ElixirClaw.SessionTest do
     end
   end
 
+  describe "approve_tools/2" do
+    test "persists explicit approvals in session metadata" do
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "approval-user", metadata: %{"locale" => "en"}))
+
+      assert :ok = Manager.approve_tools(session_id, ["privileged_tool", "bash"])
+
+      assert {:ok, %Session{} = session} = Manager.get_session(session_id)
+      assert session.metadata["approved_tools"] == ["bash", "privileged_tool"]
+
+      persisted = Repo.get!(SessionSchema, session_id)
+      assert persisted.metadata["approved_tools"] == ["bash", "privileged_tool"]
+    end
+  end
+
+  describe "set_task_agent/2 and clear_task_agent/1" do
+    test "persists the active specialized task agent in session metadata" do
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "task-agent-user", metadata: %{"locale" => "en"}))
+
+      assert :ok = Manager.set_task_agent(session_id, "feature-builder")
+
+      assert {:ok, %Session{} = session} = Manager.get_session(session_id)
+      assert session.metadata["active_task_agent"] == "feature-builder"
+
+      persisted = Repo.get!(SessionSchema, session_id)
+      assert persisted.metadata["active_task_agent"] == "feature-builder"
+
+      assert :ok = Manager.clear_task_agent(session_id)
+      assert {:ok, %Session{} = updated_session} = Manager.get_session(session_id)
+      refute Map.has_key?(updated_session.metadata, "active_task_agent")
+    end
+
+    test "returns unknown_task_agent when the requested specialized agent is missing" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "missing-task-agent"))
+
+      assert {:error, :unknown_task_agent} = Manager.set_task_agent(session_id, "does-not-exist")
+    end
+
+    test "creates a runtime task agent and stores it in session metadata" do
+      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "runtime-agent-user"))
+
+      assert {:ok, "triage-helper"} =
+               Manager.create_task_agent(session_id, %{
+                 "name" => "triage-helper",
+                 "description" => "Handles first-pass issue triage",
+                 "system_prompt" => "Triage bugs quickly and cheaply.",
+                 "tasks" => ["Classify severity", "Recommend next step"],
+                 "provider" => "openai",
+                 "model" => "gpt-4o-mini",
+                 "model_tier" => "cheap"
+               })
+
+      assert {:ok, %Session{} = session} = Manager.get_session(session_id)
+
+      assert [runtime_agent] = session.metadata["runtime_task_agents"]
+      assert runtime_agent["name"] == "triage-helper"
+      assert runtime_agent["model"] == "gpt-4o-mini"
+      assert runtime_agent["model_tier"] == "cheap"
+    end
+  end
+
+  describe "start_session/1 seeds orchestrator memory" do
+    test "stores style, personality, and preference nodes from session metadata" do
+      assert {:ok, session_id} =
+               Manager.start_session(
+                 base_attrs(
+                   channel_user_id: "memory-user",
+                   metadata: %{
+                     "locale" => "pt-BR",
+                     "response_style" => "Use concise answers.",
+                     "orchestrator_personality" => "Act like a senior Elixir engineer."
+                   }
+                 )
+               )
+
+      Process.sleep(75)
+
+      contents =
+        ElixirClaw.Agent.GraphMemory.list_session_nodes(session_id)
+        |> Enum.map(& &1.content)
+
+      assert "The user prefers pt-BR." in contents
+      assert "Use concise answers." in contents
+      assert "Act like a senior Elixir engineer." in contents
+    end
+  end
+
   describe "worker isolation" do
     test "crashing one session worker does not affect another session" do
       assert {:ok, first_id} = Manager.start_session(base_attrs(channel_user_id: "crash-a"))
@@ -135,6 +222,7 @@ defmodule ElixirClaw.SessionTest do
   end
 
   defp wait_until(fun, attempts \\ 50)
+
   defp wait_until(fun, attempts) when attempts > 0 do
     if fun.() do
       :ok
@@ -154,38 +242,4 @@ defmodule ElixirClaw.SessionTest do
     :exit, _reason -> :ok
   end
 
-  defp create_test_tables! do
-    Repo.query!("PRAGMA foreign_keys = ON")
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      channel TEXT NOT NULL,
-      channel_user_id TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      model TEXT,
-      token_count_in INTEGER NOT NULL DEFAULT 0,
-      token_count_out INTEGER NOT NULL DEFAULT 0,
-      metadata TEXT,
-      inserted_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-    """)
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
-      content TEXT NOT NULL,
-      tool_calls TEXT,
-      tool_call_id TEXT,
-      token_count INTEGER NOT NULL DEFAULT 0,
-      inserted_at TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
-    """)
-
-    Repo.query!("CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id)")
-  end
 end

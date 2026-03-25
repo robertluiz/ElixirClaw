@@ -8,6 +8,7 @@ defmodule ElixirClaw.Config.Loader do
   @default_skill_token_budget 1024
   @default_rate_limit 60
   @placeholder_secret "YOUR_KEY_HERE"
+  @oauth_provider_names MapSet.new(["codex", "github_copilot", "copilot"])
 
   def load(path) when is_binary(path) do
     case Toml.decode_file(path) do
@@ -29,11 +30,13 @@ defmodule ElixirClaw.Config.Loader do
     providers = normalize_collection(Map.get(interpolated, "providers"), "name")
     channels = normalize_collection(Map.get(interpolated, "channels"), "type")
     mcp_servers = normalize_collection(Map.get(interpolated, "mcp_servers"), "name")
+    task_agents = normalize_collection(Map.get(interpolated, "task_agents"), "name")
 
     config = %Config{
       providers: Enum.map(providers, &Config.Provider.new/1),
       channels: channels,
       database_path: nested_or_root(interpolated, ["database", "database_path"], "database_path"),
+      task_agents: task_agents,
       skills_dir: nested_or_root(interpolated, ["skills", "skills_dir"], "skills_dir"),
       max_context_tokens:
         nested_or_root(interpolated, ["context", "max_context_tokens"], "max_context_tokens") ||
@@ -52,7 +55,7 @@ defmodule ElixirClaw.Config.Loader do
         nested_or_root(interpolated, ["rate_limit", "max_requests_per_minute"], "rate_limit") ||
           @default_rate_limit,
       mcp_servers: mcp_servers,
-      security: Map.get(interpolated, "security", %{})
+      security: normalize_security(Map.get(interpolated, "security", %{}))
     }
 
     case validate(config, interpolated) do
@@ -68,13 +71,58 @@ defmodule ElixirClaw.Config.Loader do
     |> validate_required_list(config.providers, "providers")
     |> validate_required_list(config.channels, "channels")
     |> validate_required_string(config.database_path, "database_path")
+    |> validate_task_agents(config.task_agents)
     |> validate_integer_range(config.max_context_tokens, "max_context_tokens", 256, 1_000_000)
     |> validate_integer_range(config.rate_limit, "rate_limit", 1, 10_000)
     |> validate_provider_api_keys(config.providers)
     |> validate_collection_shape(Map.get(raw, "providers"), "providers")
     |> validate_collection_shape(Map.get(raw, "channels"), "channels")
     |> validate_collection_shape(Map.get(raw, "mcp_servers"), "mcp_servers")
+    |> validate_collection_shape(Map.get(raw, "task_agents"), "task_agents")
     |> Enum.reverse()
+  end
+
+  defp validate_task_agents(reasons, task_agents) when is_list(task_agents) do
+    Enum.reduce(task_agents, reasons, fn task_agent, acc ->
+      validate_task_agent(acc, task_agent)
+    end)
+  end
+
+  defp validate_task_agents(reasons, _task_agents), do: reasons
+
+  defp validate_task_agent(reasons, task_agent) when is_map(task_agent) do
+    name = Map.get(task_agent, "name") || "<unknown>"
+
+    reasons
+    |> validate_task_agent_string(task_agent, name, "name")
+    |> validate_task_agent_string(task_agent, name, "description")
+    |> validate_task_agent_string(task_agent, name, "system_prompt")
+    |> validate_task_agent_tasks(task_agent, name)
+  end
+
+  defp validate_task_agent(reasons, _task_agent), do: reasons
+
+  defp validate_task_agent_string(reasons, task_agent, task_agent_name, field) do
+    case Map.get(task_agent, field) do
+      value when is_binary(value) ->
+        if String.trim(value) == "" do
+          ["task_agent #{task_agent_name} #{field} must be a non-empty string" | reasons]
+        else
+          reasons
+        end
+
+      _invalid -> ["task_agent #{task_agent_name} #{field} must be a non-empty string" | reasons]
+    end
+  end
+
+  defp validate_task_agent_tasks(reasons, task_agent, task_agent_name) do
+    tasks = Map.get(task_agent, "tasks")
+
+    if is_list(tasks) and tasks != [] and Enum.all?(tasks, &(is_binary(&1) and String.trim(&1) != "")) do
+      reasons
+    else
+      ["task_agent #{task_agent_name} tasks must be a non-empty list of strings" | reasons]
+    end
   end
 
   defp validate_required_list(reasons, value, _field) when is_list(value) and value != [],
@@ -105,6 +153,9 @@ defmodule ElixirClaw.Config.Loader do
       api_key = provider.api_key
 
       cond do
+        oauth_provider?(provider) ->
+          acc
+
         not is_binary(api_key) or String.trim(api_key) == "" ->
           ["provider #{provider.name || "<unknown>"} api_key must be a non-empty string" | acc]
 
@@ -118,6 +169,11 @@ defmodule ElixirClaw.Config.Loader do
           acc
       end
     end)
+  end
+
+  defp oauth_provider?(provider) do
+    @oauth_provider_names
+    |> MapSet.member?(provider.name |> to_string() |> String.trim())
   end
 
   defp validate_collection_shape(reasons, nil, _field), do: reasons
@@ -180,4 +236,19 @@ defmodule ElixirClaw.Config.Loader do
   defp format_reason({:invalid_toml, reason}), do: reason
   defp format_reason(reason) when is_binary(reason), do: reason
   defp format_reason(reason), do: inspect(reason)
+
+  defp normalize_security(security) when is_map(security) do
+    %{
+      "require_explicit_approval_for_privileged_tools" =>
+        Map.get(security, "require_explicit_approval_for_privileged_tools", true),
+      "tool_policies" => Map.get(security, "tool_policies", %{})
+    }
+  end
+
+  defp normalize_security(_security) do
+    %{
+      "require_explicit_approval_for_privileged_tools" => true,
+      "tool_policies" => %{}
+    }
+  end
 end

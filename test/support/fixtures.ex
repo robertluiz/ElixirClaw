@@ -4,7 +4,7 @@ defmodule ElixirClaw.Test.Fixtures do
   Uses sensible defaults so callers only override what matters.
   """
 
-  alias ElixirClaw.Types.{Message, Session, TokenUsage, ProviderResponse, ToolCall}
+  alias ElixirClaw.Types.{Message, ProviderResponse, Session, TokenUsage, ToolCall}
 
   @doc """
   Build a `%Message{}` struct with defaults.

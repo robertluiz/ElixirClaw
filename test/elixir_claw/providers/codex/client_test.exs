@@ -16,7 +16,7 @@ defmodule ElixirClaw.Providers.Codex.ClientTest do
       models: ["codex-mini", "codex-pro"]
     )
 
-    start_supervised!(TokenManager)
+    assert :ok = TokenManager.clear_token()
 
     assert :ok =
              TokenManager.store_token(%{
@@ -26,6 +26,8 @@ defmodule ElixirClaw.Providers.Codex.ClientTest do
              })
 
     on_exit(fn ->
+      assert :ok = TokenManager.clear_token()
+
       if previous_config do
         Application.put_env(:elixir_claw, Client, previous_config)
       else

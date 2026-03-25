@@ -20,9 +20,7 @@ defmodule ElixirClaw.Channels.TelegramTest do
   setup do
     Mox.set_mox_global()
 
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
-    create_test_tables!()
+    Repo.reset!()
     Repo.delete_all(MessageSchema)
     Repo.delete_all(SessionSchema)
     kill_session_processes()
@@ -91,6 +89,13 @@ defmodule ElixirClaw.Channels.TelegramTest do
   end
 
   describe "process_update/2" do
+    test "returns an error for invalid updates without crashing the server" do
+      assert {:ok, pid} = start_supervised(Telegram)
+
+      assert {:error, :invalid_update} = Telegram.process_update(pid, %{})
+      assert Process.alive?(pid)
+    end
+
     test "creates one session per chat, sanitizes text, and publishes incoming bus events" do
       assert {:ok, pid} = start_supervised(Telegram)
 
@@ -99,10 +104,18 @@ defmodule ElixirClaw.Channels.TelegramTest do
       assert {:ok, session_id} = Telegram.process_update(pid, update)
       assert :ok = MessageBus.subscribe("session:#{session_id}")
 
-      assert {:ok, same_session_id} = Telegram.process_update(pid, private_text_update(42, "follow up"))
+      assert {:ok, same_session_id} =
+               Telegram.process_update(pid, private_text_update(42, "follow up"))
+
       assert same_session_id == session_id
 
-      assert_receive %{type: :incoming_message, session_id: ^session_id, content: "follow up", channel: "telegram", chat_id: 42}
+      assert_receive %{
+        type: :incoming_message,
+        session_id: ^session_id,
+        content: "follow up",
+        channel: "telegram",
+        chat_id: 42
+      }
 
       assert {:ok, session} = Manager.get_session(session_id)
       assert session.channel == "telegram"
@@ -120,9 +133,16 @@ defmodule ElixirClaw.Channels.TelegramTest do
         {:ok, %{message_id: 1}}
       end)
 
-      assert :ok = MessageBus.publish("session:#{session_id}", %{type: :outgoing_message, session_id: session_id, content: "reply from bus"})
+      assert :ok =
+               MessageBus.publish("session:#{session_id}", %{
+                 type: :outgoing_message,
+                 session_id: session_id,
+                 content: "reply from bus"
+               })
 
+      # wait_until + :sys.get_state ensures all inbox messages are fully processed
       wait_until(fn -> Process.info(pid, :message_queue_len) == {:message_queue_len, 0} end)
+      :sys.get_state(pid)
     end
 
     test "handles /start and /help commands locally" do
@@ -133,29 +153,52 @@ defmodule ElixirClaw.Channels.TelegramTest do
         {:ok, %{message_id: 1}}
       end)
 
-      assert {:ok, :command_handled} = Telegram.process_update(pid, private_text_update(88, "/start"))
+      assert {:ok, :command_handled} =
+               Telegram.process_update(pid, private_text_update(88, "/start"))
 
       expect(ElixirClaw.MockTelegex, :send_message, fn 88, text ->
         assert text =~ "/new"
         {:ok, %{message_id: 2}}
       end)
 
-      assert {:ok, :command_handled} = Telegram.process_update(pid, private_text_update(88, "/help"))
+      assert {:ok, :command_handled} =
+               Telegram.process_update(pid, private_text_update(88, "/help"))
     end
 
     test "creates a fresh session for /new" do
       assert {:ok, pid} = start_supervised(Telegram)
-      assert {:ok, first_session_id} = Telegram.process_update(pid, private_text_update(99, "hello"))
+
+      assert {:ok, first_session_id} =
+               Telegram.process_update(pid, private_text_update(99, "hello"))
 
       expect(ElixirClaw.MockTelegex, :send_message, fn 99, text ->
         assert text =~ "Started a new session"
         {:ok, %{message_id: 3}}
       end)
 
-      assert {:ok, second_session_id} = Telegram.process_update(pid, private_text_update(99, "/new"))
+      assert {:ok, second_session_id} =
+               Telegram.process_update(pid, private_text_update(99, "/new"))
+
       refute second_session_id == first_session_id
       assert {:error, :not_found} = Manager.get_session(first_session_id)
       assert {:ok, _session} = Manager.get_session(second_session_id)
+    end
+
+    test "approves privileged tools for the active chat session with /approve" do
+      assert {:ok, pid} = start_supervised(Telegram)
+
+      assert {:ok, session_id} = Telegram.process_update(pid, private_text_update(100, "hello"))
+
+      expect(ElixirClaw.MockTelegex, :send_message, fn 100, text ->
+        assert text == "Approved tools: bash, mock_tool"
+        {:ok, %{message_id: 4}}
+      end)
+
+      assert {:ok, ^session_id} =
+               Telegram.process_update(pid, private_text_update(100, "/approve bash mock_tool"))
+
+      assert {:ok, session} = Manager.get_session(session_id)
+      assert session.metadata["approved_tools"] == ["bash", "mock_tool"]
     end
   end
 
@@ -188,6 +231,7 @@ defmodule ElixirClaw.Channels.TelegramTest do
   defp restore_config(config), do: Application.put_env(:elixir_claw, Telegram, config)
 
   defp wait_until(fun, attempts \\ 50)
+
   defp wait_until(fun, attempts) when attempts > 0 do
     if fun.() do
       :ok
@@ -207,38 +251,4 @@ defmodule ElixirClaw.Channels.TelegramTest do
     :exit, _reason -> :ok
   end
 
-  defp create_test_tables! do
-    Repo.query!("PRAGMA foreign_keys = ON")
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      channel TEXT NOT NULL,
-      channel_user_id TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      model TEXT,
-      token_count_in INTEGER NOT NULL DEFAULT 0,
-      token_count_out INTEGER NOT NULL DEFAULT 0,
-      metadata TEXT,
-      inserted_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-    """)
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
-      content TEXT NOT NULL,
-      tool_calls TEXT,
-      tool_call_id TEXT,
-      token_count INTEGER NOT NULL DEFAULT 0,
-      inserted_at TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
-    """)
-
-    Repo.query!("CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id)")
-  end
 end

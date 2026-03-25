@@ -1,11 +1,12 @@
 defmodule ElixirClaw.Providers.Codex.TokenManager do
   @moduledoc """
-  In-memory OAuth token storage with lazy refresh.
+  OAuth token storage with disk persistence and lazy refresh.
   """
 
   use GenServer
 
   alias ElixirClaw.Providers.Codex.OAuth
+  alias ElixirClaw.Providers.OAuthTokenStore
 
   @refresh_threshold_seconds 300
   @initial_state %{access_token: nil, refresh_token: nil, expires_at: nil}
@@ -43,12 +44,13 @@ defmodule ElixirClaw.Providers.Codex.TokenManager do
 
   @impl true
   def init(:ok) do
-    {:ok, @initial_state}
+    {:ok, load_state()}
   end
 
   @impl true
   def handle_call({:store_token, token_response}, _from, state) do
-    {:reply, :ok, merge_token_response(state, token_response)}
+    updated_state = merge_token_response(state, token_response)
+    {:reply, persist_state(updated_state), updated_state}
   end
 
   @impl true
@@ -69,7 +71,8 @@ defmodule ElixirClaw.Providers.Codex.TokenManager do
 
   @impl true
   def handle_call(:clear_token, _from, _state) do
-    {:reply, :ok, clear_state()}
+    cleared_state = clear_state()
+    {:reply, persist_state(cleared_state), cleared_state}
   end
 
   defp ensure_current_token(%{access_token: nil} = _state), do: {:error, :no_token}
@@ -95,7 +98,11 @@ defmodule ElixirClaw.Providers.Codex.TokenManager do
 
   defp refresh_state(state) do
     case OAuth.refresh_token(state.refresh_token, []) do
-      {:ok, token_response} -> {:ok, merge_token_response(state, token_response)}
+      {:ok, token_response} ->
+        refreshed_state = merge_token_response(state, token_response)
+        :ok = persist_state(refreshed_state)
+        {:ok, refreshed_state}
+
       {:error, _reason} -> {:error, :no_token}
     end
   end
@@ -130,4 +137,22 @@ defmodule ElixirClaw.Providers.Codex.TokenManager do
   defp refresh_required?(_state), do: false
 
   defp clear_state, do: @initial_state
+
+  defp load_state do
+    @initial_state
+    |> Map.merge(OAuthTokenStore.load("codex"))
+    |> normalize_state()
+  end
+
+  defp persist_state(state) do
+    OAuthTokenStore.persist("codex", state)
+  end
+
+  defp normalize_state(state) do
+    %{
+      access_token: Map.get(state, :access_token),
+      refresh_token: Map.get(state, :refresh_token),
+      expires_at: Map.get(state, :expires_at)
+    }
+  end
 end

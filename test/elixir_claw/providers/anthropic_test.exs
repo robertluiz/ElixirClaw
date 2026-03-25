@@ -103,7 +103,9 @@ defmodule ElixirClaw.Providers.AnthropicTest do
       %{
         role: "assistant",
         content: "",
-        tool_calls: [%ToolCall{id: "toolu_123", name: "get_weather", arguments: %{"city" => "Paris"}}]
+        tool_calls: [
+          %ToolCall{id: "toolu_123", name: "get_weather", arguments: %{"city" => "Paris"}}
+        ]
       },
       %{role: "tool", tool_call_id: "toolu_123", content: "Sunny"}
     ]
@@ -148,8 +150,11 @@ defmodule ElixirClaw.Providers.AnthropicTest do
       )
     end)
 
-    assert {:ok, %ProviderResponse{content: "Let me check.", tool_calls: [%ToolCall{} = tool_call]}} =
-             Anthropic.chat([%{role: "user", content: "Search docs"}], tools: [%{"name" => "search_docs"}])
+    assert {:ok,
+            %ProviderResponse{content: "Let me check.", tool_calls: [%ToolCall{} = tool_call]}} =
+             Anthropic.chat([%{role: "user", content: "Search docs"}],
+               tools: [%{"name" => "search_docs"}]
+             )
 
     assert tool_call.id == "toolu_456"
     assert tool_call.name == "search_docs"
@@ -222,7 +227,8 @@ defmodule ElixirClaw.Providers.AnthropicTest do
       conn
     end)
 
-    assert {:ok, stream} = Anthropic.stream([%{role: "user", content: "Hello"}], model: "claude-3-5-sonnet")
+    assert {:ok, stream} =
+             Anthropic.stream([%{role: "user", content: "Hello"}], model: "claude-3-5-sonnet")
 
     assert [first, second, final] = Enum.to_list(stream)
     assert first == %{delta: "Hel", finish_reason: nil, tool_calls: [], token_usage: nil}
@@ -301,7 +307,9 @@ defmodule ElixirClaw.Providers.AnthropicTest do
     end)
 
     assert {:ok, stream} =
-             Anthropic.stream([%{role: "user", content: "Search docs"}], tools: [%{"name" => "search_docs"}])
+             Anthropic.stream([%{role: "user", content: "Search docs"}],
+               tools: [%{"name" => "search_docs"}]
+             )
 
     assert [final] = Enum.to_list(stream)
 
@@ -319,7 +327,10 @@ defmodule ElixirClaw.Providers.AnthropicTest do
            }
   end
 
-  test "invalid api key returns unauthorized and never logs the secret", %{bypass: bypass, api_key: api_key} do
+  test "invalid api key returns unauthorized and never logs the secret", %{
+    bypass: bypass,
+    api_key: api_key
+  } do
     expect_messages_request(bypass, fn conn, _body ->
       Plug.Conn.resp(
         conn,

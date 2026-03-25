@@ -7,11 +7,9 @@ defmodule ElixirClaw.Channels.CLI do
 
   @behaviour ElixirClaw.Channel
 
-  import Ecto.Query, only: [from: 2]
-
   alias ElixirClaw.Bus.MessageBus
+  alias ElixirClaw.Agent.TaskAgent
   alias ElixirClaw.Repo
-  alias ElixirClaw.Schema.Message, as: MessageSchema
   alias ElixirClaw.Session.Manager
   alias ElixirClaw.Types.{Message, Session, TokenUsage}
 
@@ -24,6 +22,10 @@ defmodule ElixirClaw.Channels.CLI do
           {:ok, Message.t()}
           | {:help, String.t()}
           | {:session, String.t()}
+          | {:task_agents, String.t()}
+          | {:approved_tools, [String.t()]}
+          | {:active_task_agent, String.t() | :none}
+          | {:task_agent_created, String.t()}
           | :new_session
           | :quit
           | {:switch_model, String.t()}
@@ -32,6 +34,7 @@ defmodule ElixirClaw.Channels.CLI do
   @impl true
   def start_link(config \\ %{})
   def start_link(config) when is_list(config), do: start_link(Enum.into(config, %{}))
+
   def start_link(config) when is_map(config) do
     GenServer.start_link(__MODULE__, config, name: Map.get(config, :name))
   end
@@ -58,26 +61,63 @@ defmodule ElixirClaw.Channels.CLI do
       |> sanitize_input()
 
     case normalized_text do
-      "" -> {:error, :empty_input}
-      "/help" -> {:help, help_text()}
-      "/new" -> :new_session
-      "/quit" -> :quit
-      "/exit" -> :quit
-      "/model" -> {:error, :missing_model_name}
-      "/session" -> session_info(session_id, session_manager)
+      "" ->
+        {:error, :empty_input}
+
+      "/help" ->
+        {:help, help_text()}
+
+      "/new" ->
+        :new_session
+
+      "/quit" ->
+        :quit
+
+      "/exit" ->
+        :quit
+
+      "/model" ->
+        {:error, :missing_model_name}
+
+      "/session" ->
+        session_info(session_id, session_manager)
+
+      "/agents" ->
+        {:task_agents, task_agents_text()}
+
+      "/agent" ->
+        active_task_agent_result(session_id, session_manager)
+
+      "/approve" ->
+        {:error, :missing_tool_names}
+
       _ ->
-        if String.starts_with?(normalized_text, "/model ") do
-          normalized_text
-          |> String.replace_prefix("/model ", "")
-          |> String.trim()
-          |> switch_model_result()
-        else
-          {:ok,
-           %Message{
-             role: "user",
-             content: normalized_text,
-             timestamp: DateTime.utc_now()
-           }}
+        cond do
+          String.starts_with?(normalized_text, "/model ") ->
+            normalized_text
+            |> String.replace_prefix("/model ", "")
+            |> String.trim()
+            |> switch_model_result()
+
+          String.starts_with?(normalized_text, "/approve ") ->
+            normalized_text
+            |> String.replace_prefix("/approve ", "")
+            |> String.trim()
+            |> approve_tools_result(session_id, session_manager)
+
+          String.starts_with?(normalized_text, "/agent ") ->
+            normalized_text
+            |> String.replace_prefix("/agent ", "")
+            |> String.trim()
+            |> task_agent_result(session_id, session_manager)
+
+          true ->
+            {:ok,
+             %Message{
+               role: "user",
+               content: normalized_text,
+               timestamp: DateTime.utc_now()
+             }}
         end
     end
   end
@@ -121,7 +161,12 @@ defmodule ElixirClaw.Channels.CLI do
   end
 
   def handle_info({:cli_input, line}, state) when is_binary(line) do
-    raw_message = %{text: line, session_id: state.session_id, session_manager: state.session_manager}
+    raw_message = %{
+      text: line,
+      session_id: state.session_id,
+      session_manager: state.session_manager
+    }
+
     result = handle_incoming(raw_message)
     dispatch_input_result(result, state)
   end
@@ -190,6 +235,41 @@ defmodule ElixirClaw.Channels.CLI do
     {:noreply, state}
   end
 
+  defp dispatch_input_result({:task_agents, text} = result, state) do
+    maybe_dispatch_input(state.on_input, result)
+    send_message(self(), state.session_id || "cli", text)
+    if state.prompt?, do: print_prompt()
+    {:noreply, state}
+  end
+
+  defp dispatch_input_result({:active_task_agent, task_agent_name} = result, state) do
+    maybe_dispatch_input(state.on_input, result)
+
+    message =
+      case task_agent_name do
+        :none -> "Task agent disabled"
+        name -> "Active task agent: #{name}"
+      end
+
+    send_message(self(), state.session_id || "cli", message)
+    if state.prompt?, do: print_prompt()
+    {:noreply, state}
+  end
+
+  defp dispatch_input_result({:task_agent_created, task_agent_name} = result, state) do
+    maybe_dispatch_input(state.on_input, result)
+    send_message(self(), state.session_id || "cli", "Created task agent: #{task_agent_name}")
+    if state.prompt?, do: print_prompt()
+    {:noreply, state}
+  end
+
+  defp dispatch_input_result({:approved_tools, tools} = result, state) do
+    maybe_dispatch_input(state.on_input, result)
+    send_message(self(), state.session_id || "cli", "Approved tools: #{Enum.join(tools, ", ")}")
+    if state.prompt?, do: print_prompt()
+    {:noreply, state}
+  end
+
   defp dispatch_input_result(:new_session = result, state) do
     maybe_dispatch_input(state.on_input, result)
     if state.prompt?, do: print_prompt()
@@ -234,6 +314,12 @@ defmodule ElixirClaw.Channels.CLI do
   end
 
   defp format_session_info(%Session{} = session, message_count) do
+    task_agent_fragment =
+      case Map.get(session.metadata || %{}, "active_task_agent") do
+        nil -> []
+        task_agent_name -> ["task agent: #{task_agent_name}"]
+      end
+
     [
       "session: #{session.id}",
       "channel: #{session.channel}",
@@ -242,18 +328,150 @@ defmodule ElixirClaw.Channels.CLI do
       "messages: #{message_count}",
       "tokens: #{session.token_count_in} in / #{session.token_count_out} out"
     ]
+    |> Kernel.++(task_agent_fragment)
     |> Enum.join(" | ")
   end
 
   defp count_messages(session_id) do
-    query = from(message in MessageSchema, where: message.session_id == ^session_id)
-    Repo.aggregate(query, :count, :id)
-  rescue
-    _error -> 0
+    Repo.count_session_messages(session_id)
   end
 
   defp switch_model_result(""), do: {:error, :missing_model_name}
   defp switch_model_result(name), do: {:switch_model, name}
+
+  defp approve_tools_result(_tool_names, nil, _session_manager), do: {:error, :missing_session_id}
+
+  defp approve_tools_result("", _session_id, _session_manager), do: {:error, :missing_tool_names}
+
+  defp approve_tools_result(tool_names, session_id, session_manager) do
+    parsed_tool_names =
+      tool_names
+      |> String.split(~r/\s+/, trim: true)
+      |> Enum.map(&String.trim/1)
+      |> Enum.reject(&(&1 == ""))
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    cond do
+      is_nil(session_id) ->
+        {:error, :missing_session_id}
+
+      parsed_tool_names == [] ->
+        {:error, :missing_tool_names}
+
+      session_manager.approve_tools(session_id, parsed_tool_names) == :ok ->
+        {:approved_tools, parsed_tool_names}
+
+      true ->
+        {:error, :approval_failed}
+    end
+  end
+
+  defp active_task_agent_result(nil, _session_manager), do: {:error, :missing_session_id}
+
+  defp active_task_agent_result(session_id, session_manager) do
+    case session_manager.get_session(session_id) do
+      {:ok, %Session{metadata: metadata}} ->
+        {:active_task_agent, Map.get(metadata || %{}, "active_task_agent", :none)}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp task_agent_result("", _session_id, _session_manager), do: {:error, :missing_task_agent_name}
+  defp task_agent_result(_task_agent_name, nil, _session_manager), do: {:error, :missing_session_id}
+
+  defp task_agent_result("create " <> args, session_id, session_manager) do
+    create_task_agent_result(args, session_id, session_manager)
+  end
+
+  defp task_agent_result("off", session_id, session_manager) do
+    case session_manager.clear_task_agent(session_id) do
+      :ok -> {:active_task_agent, :none}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp task_agent_result(task_agent_name, session_id, session_manager) do
+    case session_manager.set_task_agent(session_id, task_agent_name) do
+      :ok -> {:active_task_agent, task_agent_name}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp create_task_agent_result(args, session_id, session_manager) do
+    case parse_task_agent_create_args(args) do
+      {:ok, params} ->
+        with {:ok, task_agent_name} <- session_manager.create_task_agent(session_id, params),
+             :ok <- maybe_activate_created_task_agent(params, session_id, session_manager, task_agent_name) do
+          {:task_agent_created, task_agent_name}
+        else
+          {:error, reason} -> {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp maybe_activate_created_task_agent(%{"activate" => true}, session_id, session_manager, task_agent_name),
+    do: session_manager.set_task_agent(session_id, task_agent_name)
+
+  defp maybe_activate_created_task_agent(_params, _session_id, _session_manager, _task_agent_name), do: :ok
+
+  defp parse_task_agent_create_args(args) do
+    tokens = String.split(args, ~r/\s+/, trim: true)
+
+    case tokens do
+      [name | rest] when name != "" -> {:ok, build_task_agent_create_params(name, rest)}
+      _ -> {:error, :missing_task_agent_name}
+    end
+  end
+
+  defp build_task_agent_create_params(name, tokens) do
+    {params, current_key} =
+      Enum.reduce(tokens, {%{"name" => name, "tasks" => []}, nil}, fn token, {acc, key} ->
+        cond do
+          token == "--activate" ->
+            {Map.put(acc, "activate", true), nil}
+
+          String.starts_with?(token, "--") ->
+            {acc, String.replace_prefix(token, "--", "")}
+
+          key in ["description", "prompt", "model", "tier", "provider"] ->
+            mapped_key = cli_create_key(key)
+            new_value = [Map.get(acc, mapped_key), token] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
+            {Map.put(acc, mapped_key, new_value), key}
+
+          key == "tasks" ->
+            tasks = String.split(token, ",", trim: true) |> Enum.map(&String.trim/1)
+            {Map.put(acc, "tasks", tasks), nil}
+
+          key == "skill" ->
+            skills = Map.get(acc, "skills", []) ++ [%{"name" => token, "content" => "Skill #{token} attached to task agent #{name}."}]
+            {Map.put(acc, "skills", skills), nil}
+
+          key == "mcp" ->
+            mcps = Map.get(acc, "mcp_servers", []) ++ [token]
+            {Map.put(acc, "mcp_servers", mcps), nil}
+
+          true ->
+            {acc, key}
+        end
+      end)
+
+    _ = current_key
+
+    params
+    |> Map.update("tasks", [], &Enum.reject(&1, fn task -> task == "" end))
+    |> Map.put_new("description", "Runtime task agent #{name}")
+    |> Map.put_new("system_prompt", "Execute the specialized workflow for #{name}.")
+  end
+
+  defp cli_create_key("prompt"), do: "system_prompt"
+  defp cli_create_key("tier"), do: "model_tier"
+  defp cli_create_key(other), do: other
 
   defp extract_text(%{text: text}) when is_binary(text), do: text
   defp extract_text(%{"text" => text}) when is_binary(text), do: text
@@ -261,7 +479,10 @@ defmodule ElixirClaw.Channels.CLI do
   defp extract_text(other), do: to_string(other)
 
   defp extract_session_id(%{session_id: session_id}) when is_binary(session_id), do: session_id
-  defp extract_session_id(%{"session_id" => session_id}) when is_binary(session_id), do: session_id
+
+  defp extract_session_id(%{"session_id" => session_id}) when is_binary(session_id),
+    do: session_id
+
   defp extract_session_id(_raw), do: nil
 
   defp extract_session_manager(%{session_manager: manager}) when is_atom(manager), do: manager
@@ -282,8 +503,19 @@ defmodule ElixirClaw.Channels.CLI do
       "/quit - exit the CLI",
       "/exit - exit the CLI",
       "/model <name> - switch the active model",
-      "/session - show current session info"
+      "/session - show current session info",
+      "/agents - list specialized task agents",
+      "/agent - show the current specialized task agent",
+      "/agent <name> - activate a specialized task agent",
+      "/agent create <name> [--description ...] [--prompt ...] [--tasks a,b] [--model ...] [--tier cheap|standard|powerful] [--skill skill-name] [--mcp server] [--activate] - create a runtime task agent",
+      "/agent off - disable the specialized task agent",
+      "/approve <tool...> - approve privileged tools for the current session"
     ]
+    |> Enum.join("\n")
+  end
+
+  defp task_agents_text do
+    ["Available specialized task agents:" | Enum.map(TaskAgent.all(), &"- #{&1.name}: #{&1.description}")]
     |> Enum.join("\n")
   end
 

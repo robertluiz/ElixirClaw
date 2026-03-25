@@ -9,7 +9,8 @@ defmodule ElixirClaw.OpenCode.ConfigSyncTest do
     test "imports sanitized MCP servers and deduplicated skill paths" do
       path = fixture_path("test_opencode.json")
 
-      assert {:ok, %{mcp_servers: mcp_servers, skill_paths: skill_paths}} = ConfigSync.sync_config(path)
+      assert {:ok, %{mcp_servers: mcp_servers, skill_paths: skill_paths}} =
+               ConfigSync.sync_config(path)
 
       assert [
                %{
@@ -33,7 +34,8 @@ defmodule ElixirClaw.OpenCode.ConfigSyncTest do
     end
 
     test "returns invalid_json for malformed JSONC" do
-      assert {:error, :invalid_json} = ConfigSync.sync_config(fixture_path("invalid_opencode.json"))
+      assert {:error, :invalid_json} =
+               ConfigSync.sync_config(fixture_path("invalid_opencode.json"))
     end
   end
 

@@ -39,3 +39,6 @@ elixir_claw.toml
 # Compiled BEAM files
 *.beam
 
+node_modules
+.sisyphus
+nul

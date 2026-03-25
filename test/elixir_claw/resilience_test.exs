@@ -40,7 +40,9 @@ defmodule ElixirClaw.ResilienceTest do
 
       result =
         Resilience.with_failover(["primary", "secondary"], [], fn
-          "primary" -> {:error, :auth_error}
+          "primary" ->
+            {:error, :auth_error}
+
           "secondary" ->
             Agent.update(counter, &(&1 + 1))
             {:ok, :should_not_happen}
@@ -109,7 +111,42 @@ defmodule ElixirClaw.ResilienceTest do
       Process.sleep(60)
 
       assert :half_open = CircuitBreaker.state(server, "anthropic")
-      assert {:ok, :recovered} = CircuitBreaker.call(server, "anthropic", fn -> {:ok, :recovered} end)
+
+      assert {:ok, :recovered} =
+               CircuitBreaker.call(server, "anthropic", fn -> {:ok, :recovered} end)
+
+      assert :closed = CircuitBreaker.state(server, "anthropic")
+    end
+
+    test "rejects concurrent half_open probes while recovery call is in flight", %{server: server} do
+      parent = self()
+
+      for _ <- 1..3 do
+        assert {:error, :server_error} =
+                 CircuitBreaker.call(server, "anthropic", fn -> {:error, :server_error} end)
+      end
+
+      Process.sleep(60)
+      assert :half_open = CircuitBreaker.state(server, "anthropic")
+
+      probe_task =
+        Task.async(fn ->
+          CircuitBreaker.call(server, "anthropic", fn ->
+            send(parent, :half_open_probe_started)
+
+            receive do
+              :release_half_open_probe -> {:ok, :recovered}
+            end
+          end)
+        end)
+
+      assert_receive :half_open_probe_started
+
+      assert {:error, :circuit_open} =
+               CircuitBreaker.call(server, "anthropic", fn -> {:ok, :second_probe} end)
+
+      send(probe_task.pid, :release_half_open_probe)
+      assert {:ok, :recovered} = Task.await(probe_task)
       assert :closed = CircuitBreaker.state(server, "anthropic")
     end
   end
@@ -119,10 +156,7 @@ defmodule ElixirClaw.ResilienceTest do
       now = Agent.start_link(fn -> 0 end) |> elem(1)
 
       server =
-        start_supervised!(
-          {RateLimiter,
-           time_fn: fn -> Agent.get(now, & &1) end}
-        )
+        start_supervised!({RateLimiter, time_fn: fn -> Agent.get(now, & &1) end})
 
       for _ <- 1..5 do
         assert :ok = RateLimiter.check_and_consume(server, "session-1", 5)

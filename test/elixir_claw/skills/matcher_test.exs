@@ -9,7 +9,10 @@ defmodule ElixirClaw.Skills.MatcherTest do
 
   describe "match_skills/2" do
     test "matches plain string triggers case-insensitively" do
-      skills = [skill(name: "elixir-expert", triggers: ["elixir"]) , skill(name: "rust-expert", triggers: ["rust"])]
+      skills = [
+        skill(name: "elixir-expert", triggers: ["elixir"]),
+        skill(name: "rust-expert", triggers: ["rust"])
+      ]
 
       assert [%{name: "elixir-expert"}] = Matcher.match_skills("Need ELIXIR help", skills)
     end
@@ -74,7 +77,11 @@ defmodule ElixirClaw.Skills.MatcherTest do
       ]
 
       assert {"First\n\n---\n\nFits",
-              %{skills_included: ["first", "fits"], skills_excluded: ["too-large"], total_tokens: 60}} =
+              %{
+                skills_included: ["first", "fits"],
+                skills_excluded: ["too-large"],
+                total_tokens: 60
+              }} =
                Composer.compose(skills, 60)
     end
 
@@ -100,7 +107,11 @@ defmodule ElixirClaw.Skills.MatcherTest do
       ]
 
       assert {"Clean code\n\n---\n\nElixir expert",
-              %{skills_included: ["clean-code", "elixir-expert"], skills_excluded: [], total_tokens: 30}} =
+              %{
+                skills_included: ["clean-code", "elixir-expert"],
+                skills_excluded: [],
+                total_tokens: 30
+              }} =
                Composer.compose(matched, 30)
     end
 
@@ -124,7 +135,11 @@ defmodule ElixirClaw.Skills.MatcherTest do
       ]
 
       assert {"Small",
-              %{skills_included: ["small"], skills_excluded: ["elixir-expert", "clean-code"], total_tokens: 10}} =
+              %{
+                skills_included: ["small"],
+                skills_excluded: ["elixir-expert", "clean-code"],
+                total_tokens: 10
+              }} =
                Composer.compose(matched, 30)
     end
   end

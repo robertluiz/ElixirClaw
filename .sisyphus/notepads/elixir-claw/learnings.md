@@ -192,3 +192,24 @@
 - JSONC comment stripping for OpenCode configs must respect quoted strings; a small char-by-char state machine avoids corrupting `http://` and `https://` URLs that a naive `//` regex would truncate.
 - The safest OpenCode import shape is an allow-list projection: ignore `providers` entirely, drop `env`, reject secret-like keys recursively, and emit only `%{name, transport, command|url, args}` plus deduplicated skill path strings.
 - MCP stdio command sanitization can stay simple and effective at import time by rejecting commands containing shell control operators (`;`, `&&`, `||`, `|`, `>`, `<`, backtick`) instead of trying to escape them.
+
+## F3 QA Audit Learnings
+- Resilience tests live in `test/elixir_claw/resilience_test.exs` (flat, not a subdirectory), covering both `CircuitBreaker` and `RateLimiter`.
+- `RateLimiter` token refill path is NOT tested — `time_fn` injection is in place but no test exercises bucket recovery over time. Minor gap.
+- `CircuitBreaker` half-open → re-open on failure is implemented but not assertion-tested. Minor gap.
+- `Importer` tests use a real SQLite fixture DB created in test setup (not mocked), making tests highly realistic.
+- `Exporter` tests use real loopback TCP servers (custom `start_hanging_server/1` and `start_closing_server/0`) to test timeout vs connection_refused distinction.
+- Integration test covers: simple chat, tool call round-trip, multi-turn history, session management, memory consolidation, MCP HTTP round-trip, security log scan.
+- `SecurityHelpers.assert_no_secrets/1` is called on captured integration logs to verify no secret content leaks.
+- Final QA verdict: APPROVE — all 14 module pairs verified, 269 tests pass, 0 failures.
+- 2026-03-24 rerun confirmed the same QA baseline: full suite still passes at `1 doctest, 269 tests, 0 failures`, and isolated `discord_test.exs --trace` also passes with no Mox regressions.
+
+## F2 Code Quality Audit Learnings
+- `mix compile --warnings-as-errors` now runs clean in the repo after the duplicate-module cleanup and Discord Mox fix.
+- Current suite result is `1 doctest, 269 tests, 0 failures` on Windows via `C:/ProgramData/chocolatey/lib/Elixir/tools/bin/mix.bat test`.
+- `lib/elixir_claw/channels/discord.ex` contains the expected Mox-safe call `apply(Mox, :allow, [module, owner_pid, self()])`.
+
+## F4 Scope Fidelity Audit Learnings
+- Scope coverage is strong across providers, channels, skills, OpenCode sync, Windows support, and security constraints; the notable gap is confined to the MCP file set.
+- `lib/elixir_claw/mcp/stdio_client.ex` is Windows-safe by implementation, not just comments: it resolves executables and opens ports with `{:spawn_executable, executable}`.
+- Token-economy scope is implemented in `lib/elixir_claw/agent/context_builder.ex` via explicit history budgeting and newest-first sliding-window trimming.

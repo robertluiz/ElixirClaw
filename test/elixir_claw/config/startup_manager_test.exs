@@ -74,8 +74,16 @@ defmodule ElixirClaw.Config.StartupManagerTest do
 
       config = %{
         "providers" => %{
-          "openai" => %{"enabled" => true, "api_key" => "${OPENAI_API_KEY}", "model" => "gpt-4o-mini"},
-          "anthropic" => %{"enabled" => false, "api_key" => "${ANTHROPIC_API_KEY}", "model" => "claude-3-5-sonnet"},
+          "openai" => %{
+            "enabled" => true,
+            "api_key" => "${OPENAI_API_KEY}",
+            "model" => "gpt-4o-mini"
+          },
+          "anthropic" => %{
+            "enabled" => false,
+            "api_key" => "${ANTHROPIC_API_KEY}",
+            "model" => "claude-3-5-sonnet"
+          },
           "ollama" => %{"model" => "llama3"}
         }
       }
@@ -108,11 +116,16 @@ defmodule ElixirClaw.Config.StartupManagerTest do
       warning_log =
         capture_log(fn ->
           assert [
-                   {"openai", %{"enabled" => true, "api_key" => "inline", "unexpected" => "value"}}
+                   {"openai",
+                    %{"enabled" => true, "api_key" => "inline", "unexpected" => "value"}}
                  ] =
                    StartupManager.enabled_providers(%{
                      "providers" => %{
-                       "openai" => %{"enabled" => true, "api_key" => "inline", "unexpected" => "value"}
+                       "openai" => %{
+                         "enabled" => true,
+                         "api_key" => "inline",
+                         "unexpected" => "value"
+                       }
                      }
                    })
         end)

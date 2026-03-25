@@ -103,7 +103,8 @@ defmodule ElixirClaw.Providers.CopilotBYOK do
     |> maybe_put("tools", Keyword.get(opts, :tools))
   end
 
-  defp validate_stream_response(%Req.Response{status: status, body: body}) when status in 200..299 do
+  defp validate_stream_response(%Req.Response{status: status, body: body})
+       when status in 200..299 do
     if Enumerable.impl_for(body), do: :ok, else: {:error, :stream_error}
   end
 
@@ -186,7 +187,10 @@ defmodule ElixirClaw.Providers.CopilotBYOK do
   defp decode_body(_body), do: {:error, :invalid_response}
 
   defp sanitize_http_error(%Req.Response{status: 401}), do: {:error, :unauthorized}
-  defp sanitize_http_error(%Req.Response{status: status}) when status >= 500, do: {:error, :server_error}
+
+  defp sanitize_http_error(%Req.Response{status: status}) when status >= 500,
+    do: {:error, :server_error}
+
   defp sanitize_http_error(%Req.Response{}), do: {:error, :request_failed}
 
   defp fetch_required_config(key, error) do

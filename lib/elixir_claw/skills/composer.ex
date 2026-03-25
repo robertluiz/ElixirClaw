@@ -8,22 +8,30 @@ defmodule ElixirClaw.Skills.Composer do
   @separator "\n\n---\n\n"
 
   @spec compose([Skill.t() | map()], integer()) ::
-          {String.t(), %{skills_included: [String.t()], skills_excluded: [String.t()], total_tokens: integer()}}
-  def compose(matched_skills, token_budget) when is_list(matched_skills) and is_integer(token_budget) do
+          {String.t(),
+           %{
+             skills_included: [String.t()],
+             skills_excluded: [String.t()],
+             total_tokens: integer()
+           }}
+  def compose(matched_skills, token_budget)
+      when is_list(matched_skills) and is_integer(token_budget) do
     sorted_skills = Enum.sort_by(matched_skills, &Map.get(&1, :priority, 0), :desc)
     skill_index = Map.new(sorted_skills, &{Map.fetch!(&1, :name), &1})
 
     result =
       sorted_skills
       |> Enum.filter(&Map.get(&1, :direct_match?, true))
-      |> Enum.reduce(%{included: [], included_names: MapSet.new(), excluded: [], total_tokens: 0}, fn skill, acc ->
-        maybe_include_skill(skill, acc, skill_index, token_budget)
-      end)
+      |> Enum.reduce(
+        %{included: [], included_names: MapSet.new(), excluded: [], total_tokens: 0},
+        fn skill, acc ->
+          maybe_include_skill(skill, acc, skill_index, token_budget)
+        end
+      )
 
     content =
       result.included
-      |> Enum.map(&Map.fetch!(&1, :content))
-      |> Enum.join(@separator)
+      |> Enum.map_join(@separator, &Map.fetch!(&1, :content))
 
     metadata = %{
       skills_included: Enum.map(result.included, &Map.fetch!(&1, :name)),
@@ -42,10 +50,8 @@ defmodule ElixirClaw.Skills.Composer do
         {:ok, bundle} ->
           bundle_tokens = Enum.reduce(bundle, 0, &(&1.token_estimate + &2))
 
-          if acc.total_tokens + bundle_tokens <= token_budget do
-            Enum.reduce(bundle, acc, fn bundle_skill, bundle_acc ->
-              include_skill(bundle_acc, bundle_skill)
-            end)
+          if within_token_budget?(acc, bundle_tokens, token_budget) do
+            include_bundle(acc, bundle)
           else
             exclude_bundle(acc, bundle)
           end
@@ -69,7 +75,13 @@ defmodule ElixirClaw.Skills.Composer do
       true ->
         visiting = MapSet.put(visiting, name)
 
-        with {:ok, dependencies} <- resolve_dependencies(Map.get(skill, :depends_on, []), skill_index, included_names, visiting) do
+        with {:ok, dependencies} <-
+               resolve_dependencies(
+                 Map.get(skill, :depends_on, []),
+                 skill_index,
+                 included_names,
+                 visiting
+               ) do
           {:ok, dependencies ++ [skill]}
         end
     end
@@ -122,6 +134,16 @@ defmodule ElixirClaw.Skills.Composer do
           total_tokens: acc.total_tokens + Map.get(skill, :token_estimate, 0)
       }
     end
+  end
+
+  defp within_token_budget?(acc, bundle_tokens, token_budget) do
+    acc.total_tokens + bundle_tokens <= token_budget
+  end
+
+  defp include_bundle(acc, bundle) do
+    Enum.reduce(bundle, acc, fn bundle_skill, bundle_acc ->
+      include_skill(bundle_acc, bundle_skill)
+    end)
   end
 
   defp exclude_bundle(acc, bundle) do

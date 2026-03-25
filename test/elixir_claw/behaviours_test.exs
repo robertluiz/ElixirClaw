@@ -17,7 +17,14 @@ defmodule ElixirClaw.BehavioursTest do
 
     test "MockProvider.chat/2 can be stubbed with Mox" do
       expect(ElixirClaw.MockProvider, :chat, fn _messages, _opts ->
-        {:ok, %{content: "hello", tool_calls: nil, token_usage: nil, model: "test", finish_reason: "stop"}}
+        {:ok,
+         %{
+           content: "hello",
+           tool_calls: nil,
+           token_usage: nil,
+           model: "test",
+           finish_reason: "stop"
+         }}
       end)
 
       assert {:ok, resp} = ElixirClaw.MockProvider.chat([], [])

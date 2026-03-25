@@ -2,27 +2,41 @@ defmodule ElixirClaw.Providers.Codex.TokenManagerTest do
   use ExUnit.Case, async: false
 
   alias ElixirClaw.Providers.Codex.{OAuth, TokenManager}
+  alias ElixirClaw.Providers.OAuthTokenStore
 
   setup do
     bypass = Bypass.open()
     previous_config = Application.get_env(:elixir_claw, OAuth)
+    previous_store_config = Application.get_env(:elixir_claw, OAuthTokenStore)
+    storage_path = Path.join(System.tmp_dir!(), "codex-token-manager-#{System.unique_integer([:positive])}.json")
 
     Application.put_env(:elixir_claw, OAuth,
       client_id: "codex-client",
       token_url: "http://localhost:#{bypass.port}/oauth/token"
     )
 
-    start_supervised!(TokenManager)
+    Application.put_env(:elixir_claw, OAuthTokenStore, storage_path: storage_path)
+
+    assert :ok = TokenManager.clear_token()
 
     on_exit(fn ->
+      assert :ok = TokenManager.clear_token()
+      File.rm(storage_path)
+
       if previous_config do
         Application.put_env(:elixir_claw, OAuth, previous_config)
       else
         Application.delete_env(:elixir_claw, OAuth)
       end
+
+      if previous_store_config do
+        Application.put_env(:elixir_claw, OAuthTokenStore, previous_store_config)
+      else
+        Application.delete_env(:elixir_claw, OAuthTokenStore)
+      end
     end)
 
-    %{bypass: bypass}
+    %{bypass: bypass, storage_path: storage_path}
   end
 
   test "store_token/1 then get_token/0 returns the access token" do
@@ -93,5 +107,22 @@ defmodule ElixirClaw.Providers.Codex.TokenManagerTest do
     assert {:ok, "fresh-token"} = TokenManager.get_token()
     assert TokenManager.token_valid?()
     assert {:ok, "fresh-token"} = TokenManager.get_token()
+  end
+
+  test "loads persisted tokens after the process restarts", %{storage_path: storage_path} do
+    assert :ok =
+             TokenManager.store_token(%{
+               access_token: "persisted-access-token",
+               refresh_token: "persisted-refresh-token",
+               expires_in: 3600
+             })
+
+    pid = Process.whereis(TokenManager)
+    assert is_pid(pid)
+    GenServer.stop(pid)
+    Process.sleep(50)
+
+    assert {:ok, "persisted-access-token"} = TokenManager.get_token()
+    assert File.exists?(storage_path)
   end
 end

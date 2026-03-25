@@ -80,7 +80,9 @@ defmodule ElixirClaw.MCP.ToolWrapper do
   end
 
   @spec description(t()) :: String.t()
-  def description(%__MODULE__{description: description}) when is_binary(description), do: description
+  def description(%__MODULE__{description: description}) when is_binary(description),
+    do: description
+
   def description(%__MODULE__{}), do: ""
 
   @spec parameters_schema(t()) :: map()
@@ -96,7 +98,9 @@ defmodule ElixirClaw.MCP.ToolWrapper do
   end
 
   @spec max_output_bytes(t()) :: non_neg_integer()
-  def max_output_bytes(%__MODULE__{max_output_bytes: value}) when is_integer(value) and value >= 0, do: value
+  def max_output_bytes(%__MODULE__{max_output_bytes: value})
+      when is_integer(value) and value >= 0, do: value
+
   def max_output_bytes(%__MODULE__{}), do: @default_max_output_bytes
 
   @spec timeout_ms(t()) :: non_neg_integer()
@@ -129,7 +133,8 @@ defmodule ElixirClaw.MCP.ToolWrapper do
   end
 
   @spec unregister_mcp_tools(atom(), String.t()) :: :ok
-  def unregister_mcp_tools(registry, server_name) when is_atom(registry) and is_binary(server_name) do
+  def unregister_mcp_tools(registry, server_name)
+      when is_atom(registry) and is_binary(server_name) do
     prefix = "mcp:" <> server_name <> ":"
 
     registry
@@ -155,8 +160,12 @@ defmodule ElixirClaw.MCP.ToolWrapper do
   defp fetch_tool_name(%{name: name}) when is_binary(name), do: name
   defp fetch_tool_name(%{"name" => name}) when is_binary(name), do: name
 
-  defp fetch_tool_description(%{description: description}) when is_binary(description), do: description
-  defp fetch_tool_description(%{"description" => description}) when is_binary(description), do: description
+  defp fetch_tool_description(%{description: description}) when is_binary(description),
+    do: description
+
+  defp fetch_tool_description(%{"description" => description}) when is_binary(description),
+    do: description
+
   defp fetch_tool_description(_tool), do: ""
 
   defp fetch_tool_schema(%{schema: schema}) when is_map(schema), do: schema

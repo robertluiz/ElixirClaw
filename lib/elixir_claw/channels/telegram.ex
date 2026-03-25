@@ -19,13 +19,14 @@ defmodule ElixirClaw.Channels.Telegram do
   @markers ["<|", "|>", "[INST]", "[/INST]", "<<SYS>>", "<</SYS>>"]
   @default_provider "openai"
   @start_message "Welcome to ElixirClaw Telegram. Send a message to begin, or use /help."
-  @help_message "Available commands: /start, /help, /new"
+  @help_message "Available commands: /start, /help, /new, /approve <tool...>"
   @new_session_message "Started a new session for this chat."
 
   defmodule API do
     @moduledoc false
 
-    @callback send_message(chat_id :: integer(), text :: String.t()) :: {:ok, term()} | {:error, term()}
+    @callback send_message(chat_id :: integer(), text :: String.t()) ::
+                {:ok, term()} | {:error, term()}
   end
 
   defmodule TelegexAPI do
@@ -47,6 +48,7 @@ defmodule ElixirClaw.Channels.Telegram do
   @impl Channel
   @spec start_link(map() | keyword()) :: GenServer.on_start() | {:error, :invalid_token}
   def start_link(config \\ %{})
+
   def start_link(config) do
     merged_config = merged_config(config)
 
@@ -115,8 +117,11 @@ defmodule ElixirClaw.Channels.Telegram do
   @impl true
   def handle_info(%{type: :outgoing_message, session_id: session_id, content: content}, state) do
     case deliver_to_session(state, session_id, content) do
-      :ok -> :ok
-      {:error, reason} -> Logger.warning("Telegram send failed for session #{session_id}: #{inspect(reason)}")
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning("Telegram send failed for session #{session_id}: #{inspect(reason)}")
     end
 
     {:noreply, state}
@@ -124,8 +129,13 @@ defmodule ElixirClaw.Channels.Telegram do
 
   def handle_info(%{type: :error, session_id: session_id, message: content}, state) do
     case deliver_to_session(state, session_id, content) do
-      :ok -> :ok
-      {:error, reason} -> Logger.warning("Telegram error delivery failed for session #{session_id}: #{inspect(reason)}")
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warning(
+          "Telegram error delivery failed for session #{session_id}: #{inspect(reason)}"
+        )
     end
 
     {:noreply, state}
@@ -148,7 +158,28 @@ defmodule ElixirClaw.Channels.Telegram do
         :new ->
           case restart_session(chat_id, state) do
             {{:ok, session_id}, next_state} ->
-              {send_direct_message(next_state, chat_id, @new_session_message, session_id), next_state}
+              {send_direct_message(next_state, chat_id, @new_session_message, session_id),
+               next_state}
+
+            {error, next_state} ->
+              {error, next_state}
+          end
+
+        {:approve, tool_names} ->
+          case ensure_session(chat_id, state) do
+            {{:ok, session_id}, next_state} ->
+              case {tool_names, Manager.approve_tools(session_id, tool_names)} do
+                {[], _result} ->
+                  {send_direct_message(next_state, chat_id, "Usage: /approve <tool...>", session_id),
+                   next_state}
+
+                {_tools, :ok} ->
+                  {send_direct_message(next_state, chat_id, approval_message(tool_names), session_id),
+                   next_state}
+
+                {_tools, {:error, reason}} ->
+                  {{:error, reason}, next_state}
+              end
 
             {error, next_state} ->
               {error, next_state}
@@ -165,12 +196,15 @@ defmodule ElixirClaw.Channels.Telegram do
                 chat_id: chat_id
               }
 
-              {MessageBus.publish(topic(session_id), payload) |> normalize_publish_result(session_id), next_state}
+              {MessageBus.publish(topic(session_id), payload)
+               |> normalize_publish_result(session_id), next_state}
 
             {error, next_state} ->
               {error, next_state}
           end
       end
+    else
+      {:error, reason} -> {{:error, reason}, state}
     end
   end
 
@@ -184,7 +218,9 @@ defmodule ElixirClaw.Channels.Telegram do
 
   defp maybe_end_existing_session(chat_id, state) do
     case Map.get(state.chat_sessions, chat_id) do
-      nil -> state
+      nil ->
+        state
+
       session_id ->
         :ok = MessageBus.unsubscribe(topic(session_id))
         :ok = Manager.end_session(session_id)
@@ -341,7 +377,22 @@ defmodule ElixirClaw.Channels.Telegram do
   defp command_for("/start"), do: :start
   defp command_for("/help"), do: :help
   defp command_for("/new"), do: :new
+  defp command_for("/approve"), do: {:approve, []}
+  defp command_for("/approve " <> tools), do: {:approve, parse_tool_names(tools)}
   defp command_for(_text), do: nil
+
+  defp parse_tool_names(text) do
+    text
+    |> String.split(~r/\s+/, trim: true)
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.uniq()
+    |> Enum.sort()
+  end
+
+  defp approval_message(tool_names) do
+    "Approved tools: #{Enum.join(tool_names, ", ")}"
+  end
 
   defp log_incoming(chat_id, content) do
     Logger.debug(fn ->

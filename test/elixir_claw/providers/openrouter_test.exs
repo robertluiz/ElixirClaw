@@ -93,7 +93,11 @@ defmodule ElixirClaw.Providers.OpenRouterTest do
       assert request["stream_options"] == %{"include_usage" => true}
       assert request["transforms"] == ["middle-out"]
       assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer or-test-secret-key"]
-      assert Plug.Conn.get_req_header(conn, "http-referer") == ["https://github.com/example/elixirclaw"]
+
+      assert Plug.Conn.get_req_header(conn, "http-referer") == [
+               "https://github.com/example/elixirclaw"
+             ]
+
       assert Plug.Conn.get_req_header(conn, "x-title") == ["ElixirClaw"]
 
       conn =
@@ -186,7 +190,11 @@ defmodule ElixirClaw.Providers.OpenRouterTest do
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer or-test-secret-key"]
       assert ["application/json"] = Plug.Conn.get_req_header(conn, "content-type")
-      assert Plug.Conn.get_req_header(conn, "http-referer") == ["https://github.com/example/elixirclaw"]
+
+      assert Plug.Conn.get_req_header(conn, "http-referer") == [
+               "https://github.com/example/elixirclaw"
+             ]
+
       assert Plug.Conn.get_req_header(conn, "x-title") == ["ElixirClaw"]
       fun.(conn, Jason.decode!(body))
     end)

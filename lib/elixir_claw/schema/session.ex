@@ -9,15 +9,15 @@ defmodule ElixirClaw.Schema.Session do
   @foreign_key_type :binary_id
 
   schema "sessions" do
-    field :channel, :string
-    field :channel_user_id, :string
-    field :provider, :string
-    field :model, :string
-    field :token_count_in, :integer, default: 0
-    field :token_count_out, :integer, default: 0
-    field :metadata, :map
+    field(:channel, :string)
+    field(:channel_user_id, :string)
+    field(:provider, :string)
+    field(:model, :string)
+    field(:token_count_in, :integer, default: 0)
+    field(:token_count_out, :integer, default: 0)
+    field(:metadata, :map)
 
-    has_many :messages, Message
+    has_many(:messages, Message)
 
     timestamps()
   end

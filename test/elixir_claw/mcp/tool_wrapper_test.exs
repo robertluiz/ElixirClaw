@@ -45,7 +45,12 @@ defmodule ElixirClaw.MCP.ToolWrapperTest do
 
       assert ToolWrapper.name(wrapper) == "mcp:demo-server:echo"
       assert ToolWrapper.description(wrapper) == "Echo text"
-      assert ToolWrapper.parameters_schema(wrapper) == %{"type" => "object", "required" => ["text"]}
+
+      assert ToolWrapper.parameters_schema(wrapper) == %{
+               "type" => "object",
+               "required" => ["text"]
+             }
+
       assert ToolWrapper.timeout_ms(wrapper) == 30_000
       assert ToolWrapper.max_output_bytes(wrapper) == 65_536
     end

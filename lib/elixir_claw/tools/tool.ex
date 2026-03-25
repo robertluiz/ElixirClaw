@@ -20,6 +20,9 @@ defmodule ElixirClaw.Tool do
   @callback execute(params :: map(), context :: map()) ::
               {:ok, result :: String.t()} | {:error, term()}
 
+  @doc "Optional risk tier used for tool exposure and authorization."
+  @callback risk_tier() :: :standard | :privileged
+
   @doc """
   Maximum allowed output size in bytes.
 
@@ -35,4 +38,6 @@ defmodule ElixirClaw.Tool do
   hung tools from blocking the agent loop.
   """
   @callback timeout_ms() :: non_neg_integer()
+
+  @optional_callbacks risk_tier: 0
 end

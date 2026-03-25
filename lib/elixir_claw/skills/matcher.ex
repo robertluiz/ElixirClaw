@@ -22,19 +22,27 @@ defmodule ElixirClaw.Skills.Matcher do
     |> Enum.any?(&trigger_matches?(&1, normalized_message, skill))
   end
 
-  defp trigger_matches?(trigger, _normalized_message, _skill) when not is_binary(trigger), do: false
+  defp trigger_matches?(trigger, _normalized_message, _skill) when not is_binary(trigger),
+    do: false
 
   defp trigger_matches?(trigger, normalized_message, skill) do
     case parse_regex_trigger(trigger) do
-      {:regex, pattern, options} -> regex_matches?(pattern, options, normalized_message, trigger, skill)
-      :plain -> String.contains?(normalized_message, String.downcase(trigger))
+      {:regex, pattern, options} ->
+        regex_matches?(pattern, options, normalized_message, trigger, skill)
+
+      :plain ->
+        String.contains?(normalized_message, String.downcase(trigger))
     end
   end
 
   defp regex_matches?(pattern, options, normalized_message, original_trigger, skill) do
     case :re.run(normalized_message, pattern, [:unicode | options]) do
-      {:match, _} -> true
-      :nomatch -> false
+      {:match, _} ->
+        true
+
+      :nomatch ->
+        false
+
       {:error, reason} ->
         log_invalid_regex(skill, original_trigger, reason)
         false

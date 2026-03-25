@@ -6,8 +6,6 @@ defmodule ElixirClaw.OpenCode.ImporterTest do
   alias ElixirClaw.Schema.{Message, Session}
   alias ElixirClaw.Session.Manager
 
-  import Ecto.Query
-
   @fixtures_dir Path.expand("../fixtures/opencode", __DIR__)
   @db_path Path.join(@fixtures_dir, "test_opencode.db")
   @invalid_db_path Path.join(@fixtures_dir, "invalid.db")
@@ -20,8 +18,7 @@ defmodule ElixirClaw.OpenCode.ImporterTest do
     create_opencode_db!(@db_path)
     File.write!(@invalid_db_path, "definitely not sqlite")
 
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    create_local_tables!()
+    Repo.reset!()
     Repo.delete_all(Message)
     Repo.delete_all(Session)
     kill_session_processes()
@@ -67,11 +64,7 @@ defmodule ElixirClaw.OpenCode.ImporterTest do
       assert session.metadata["source_session_id"] == "01HSESSIONA"
       assert session.metadata["directory"] == "C:/projects/app"
 
-      imported_messages =
-        Message
-        |> where([message], message.session_id == ^local_session_id)
-        |> order_by([message], asc: message.inserted_at, asc: message.id)
-        |> Repo.all()
+      imported_messages = Repo.list_session_messages(local_session_id)
 
       assert Enum.map(imported_messages, & &1.role) == ["user", "assistant"]
 
@@ -100,11 +93,7 @@ defmodule ElixirClaw.OpenCode.ImporterTest do
       assert {:ok, 1} =
                Importer.import_messages(@db_path, "session_01HSESSIONA", since: 1_700_000_000_250)
 
-      imported_messages =
-        Message
-        |> where([message], message.session_id == ^local_session_id)
-        |> order_by([message], asc: message.inserted_at, asc: message.id)
-        |> Repo.all()
+      imported_messages = Repo.list_session_messages(local_session_id)
 
       assert Enum.map(imported_messages, & &1.content) == [
                "Hello importer",
@@ -112,39 +101,6 @@ defmodule ElixirClaw.OpenCode.ImporterTest do
                "Incremental hello"
              ]
     end
-  end
-
-  defp create_local_tables! do
-    Repo.query!("PRAGMA foreign_keys = ON")
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      channel TEXT NOT NULL,
-      channel_user_id TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      model TEXT,
-      token_count_in INTEGER NOT NULL DEFAULT 0,
-      token_count_out INTEGER NOT NULL DEFAULT 0,
-      metadata TEXT,
-      inserted_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-    """)
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
-      content TEXT NOT NULL,
-      tool_calls TEXT,
-      tool_call_id TEXT,
-      token_count INTEGER NOT NULL DEFAULT 0,
-      inserted_at TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
-    """)
   end
 
   defp create_opencode_db!(path) do
@@ -251,29 +207,35 @@ defmodule ElixirClaw.OpenCode.ImporterTest do
 
       insert_part!(
         conn,
-        "part_01HPART001",
-        "message_01HMSG002",
-        "session_01HSESSIONA",
-        1_700_000_000_201,
-        %{"text" => "Generated code block"}
+        %{
+          id: "part_01HPART001",
+          message_id: "message_01HMSG002",
+          session_id: "session_01HSESSIONA",
+          timestamp: 1_700_000_000_201,
+          data: %{"text" => "Generated code block"}
+        }
       )
 
       insert_part!(
         conn,
-        "part_01HPART002",
-        "message_01HMSG002",
-        "session_01HSESSIONA",
-        1_700_000_000_202,
-        %{"tool_results" => [%{"content" => "small result"}]}
+        %{
+          id: "part_01HPART002",
+          message_id: "message_01HMSG002",
+          session_id: "session_01HSESSIONA",
+          timestamp: 1_700_000_000_202,
+          data: %{"tool_results" => [%{"content" => "small result"}]}
+        }
       )
 
       insert_part!(
         conn,
-        "part_01HPART003",
-        "message_01HMSG002",
-        "session_01HSESSIONA",
-        1_700_000_000_203,
-        %{"tool_results" => [%{"content" => String.duplicate("x", 10_241)}]}
+        %{
+          id: "part_01HPART003",
+          message_id: "message_01HMSG002",
+          session_id: "session_01HSESSIONA",
+          timestamp: 1_700_000_000_203,
+          data: %{"tool_results" => [%{"content" => String.duplicate("x", 10_241)}]}
+        }
       )
     after
       Exqlite.Sqlite3.close(conn)
@@ -327,7 +289,10 @@ defmodule ElixirClaw.OpenCode.ImporterTest do
       )
   end
 
-  defp insert_part!(conn, id, message_id, session_id, timestamp, data) do
+  defp insert_part!(conn, attrs) do
+    %{id: id, message_id: message_id, session_id: session_id, timestamp: timestamp, data: data} =
+      attrs
+
     :ok =
       Exqlite.Sqlite3.execute(
         conn,

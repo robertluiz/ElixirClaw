@@ -182,7 +182,10 @@ defmodule ElixirClaw.Providers.CopilotBYOKTest do
         Jason.encode!(%{
           "model" => "gpt-4o-mini",
           "choices" => [
-            %{"message" => %{"role" => "assistant", "content" => "Safe"}, "finish_reason" => "stop"}
+            %{
+              "message" => %{"role" => "assistant", "content" => "Safe"},
+              "finish_reason" => "stop"
+            }
           ]
         })
       )

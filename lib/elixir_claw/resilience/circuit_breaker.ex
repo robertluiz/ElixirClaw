@@ -36,7 +36,10 @@ defmodule ElixirClaw.Resilience.CircuitBreaker do
   @impl true
   def init(opts) do
     {:ok,
-     %{circuits: %{}, open_timeout_ms: Keyword.get(opts, :open_timeout_ms, @default_open_timeout_ms)}}
+     %{
+       circuits: %{},
+       open_timeout_ms: Keyword.get(opts, :open_timeout_ms, @default_open_timeout_ms)
+     }}
   end
 
   @impl true
@@ -51,7 +54,11 @@ defmodule ElixirClaw.Resilience.CircuitBreaker do
         {:reply, :ok, next_state}
 
       :half_open ->
-        {:reply, :ok, put_in_flight(next_state, provider_name)}
+        if in_flight?(next_state, provider_name) do
+          {:reply, {:error, :circuit_open}, next_state}
+        else
+          {:reply, :ok, put_in_flight(next_state, provider_name)}
+        end
     end
   end
 
@@ -84,8 +91,17 @@ defmodule ElixirClaw.Resilience.CircuitBreaker do
 
     next_circuit =
       case circuit.state do
-        :half_open -> %{state: :closed, consecutive_failures: 0, opened_at_ms: nil, in_flight?: false}
-        _other -> %{circuit | state: :closed, consecutive_failures: 0, opened_at_ms: nil, in_flight?: false}
+        :half_open ->
+          %{state: :closed, consecutive_failures: 0, opened_at_ms: nil, in_flight?: false}
+
+        _other ->
+          %{
+            circuit
+            | state: :closed,
+              consecutive_failures: 0,
+              opened_at_ms: nil,
+              in_flight?: false
+          }
       end
 
     put_circuit(state, provider_name, next_circuit)
@@ -104,7 +120,11 @@ defmodule ElixirClaw.Resilience.CircuitBreaker do
         if failures >= @failure_threshold do
           open_circuit(state, provider_name, %{circuit | consecutive_failures: failures})
         else
-          put_circuit(state, provider_name, %{circuit | consecutive_failures: failures, in_flight?: false})
+          put_circuit(state, provider_name, %{
+            circuit
+            | consecutive_failures: failures,
+              in_flight?: false
+          })
         end
     end
   end
@@ -129,6 +149,12 @@ defmodule ElixirClaw.Resilience.CircuitBreaker do
       nil -> %{new_circuit() | state: :half_open, in_flight?: true}
       circuit -> %{circuit | in_flight?: true}
     end)
+  end
+
+  defp in_flight?(state, provider_name) do
+    state.circuits
+    |> Map.get(provider_name, new_circuit())
+    |> Map.get(:in_flight?, false)
   end
 
   defp put_circuit(state, provider_name, circuit) do

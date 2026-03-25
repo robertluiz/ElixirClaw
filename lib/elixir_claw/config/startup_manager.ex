@@ -30,11 +30,17 @@ defmodule ElixirClaw.Config.StartupManager do
   def enabled_providers(config_map) when is_map(config_map) do
     config_map
     |> interpolate_env_vars()
-    |> enabled_entries("providers", @provider_allowed_keys, @provider_required_secrets, "provider")
+    |> enabled_entries(
+      "providers",
+      @provider_allowed_keys,
+      @provider_required_secrets,
+      "provider"
+    )
   end
 
   @spec interpolate_env_vars(term()) :: term()
-  def interpolate_env_vars(value) when is_list(value), do: Enum.map(value, &interpolate_env_vars/1)
+  def interpolate_env_vars(value) when is_list(value),
+    do: Enum.map(value, &interpolate_env_vars/1)
 
   def interpolate_env_vars(%module{} = struct) do
     struct
@@ -73,9 +79,14 @@ defmodule ElixirClaw.Config.StartupManager do
 
       if Map.get(entry, "enabled", false) do
         case missing_fields_for_entry(collection_key, name, entry, required_secrets) do
-          [] -> [{name, entry} | acc]
+          [] ->
+            [{name, entry} | acc]
+
           missing ->
-            Logger.warning("Skipping enabled #{label} #{name}: missing required secrets #{format_missing(missing)}")
+            Logger.warning(
+              "Skipping enabled #{label} #{name}: missing required secrets #{format_missing(missing)}"
+            )
+
             acc
         end
       else

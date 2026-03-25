@@ -11,13 +11,13 @@ defmodule ElixirClaw.Schema.Message do
   @foreign_key_type :binary_id
 
   schema "messages" do
-    field :role, :string
-    field :content, :string
-    field :tool_calls, :map
-    field :tool_call_id, :string
-    field :token_count, :integer, default: 0
+    field(:role, :string)
+    field(:content, :string)
+    field(:tool_calls, :map)
+    field(:tool_call_id, :string)
+    field(:token_count, :integer, default: 0)
 
-    belongs_to :session, Session
+    belongs_to(:session, Session)
 
     timestamps(updated_at: false)
   end

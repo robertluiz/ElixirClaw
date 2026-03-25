@@ -1,8 +1,6 @@
 defmodule ElixirClaw.OpenCode.Importer do
   @moduledoc false
 
-  import Ecto.Query
-
   alias ElixirClaw.OpenCode.Schema.Message, as: OpenCodeMessage
   alias ElixirClaw.OpenCode.Schema.Part, as: OpenCodePart
   alias ElixirClaw.OpenCode.Schema.Session, as: OpenCodeSession
@@ -254,18 +252,9 @@ defmodule ElixirClaw.OpenCode.Importer do
   end
 
   defp fetch_local_session_id(source_session_id) do
-    case Repo.one(
-           from(session in LocalSession,
-             where:
-               session.channel == "opencode" and
-                 session.provider == "opencode" and
-                 session.channel_user_id == ^source_session_id,
-             select: session.id,
-             limit: 1
-           )
-         ) do
+    case Repo.find_session("opencode", "opencode", source_session_id) do
       nil -> {:error, :session_not_imported}
-      session_id -> {:ok, session_id}
+      session -> {:ok, session.id}
     end
   end
 
@@ -282,21 +271,22 @@ defmodule ElixirClaw.OpenCode.Importer do
 
     messages = fetch_source_messages(conn, source_session.id, since)
 
-    Repo.transaction(fn ->
-      Enum.reduce(messages, 0, fn source_message, count ->
+    mapped_messages =
+      Enum.map(messages, fn source_message ->
         mapped_message =
           map_message(source_message, Map.get(part_map, source_message.id, []), local_session_id)
 
         %LocalMessage{id: mapped_message.id, inserted_at: mapped_message.inserted_at}
         |> LocalMessage.changeset(mapped_message.attrs)
-        |> Repo.insert!()
-
-        count + 1
+        |> Ecto.Changeset.apply_changes()
       end)
-    end)
-    |> case do
-      {:ok, count} -> {:ok, count}
-      {:error, _operation, reason, _changes} -> {:error, reason}
+
+    existing_messages = Repo.list_session_messages(local_session_id)
+    combined_messages = existing_messages ++ mapped_messages
+
+    case Repo.replace_session_messages(local_session_id, combined_messages) do
+      {:ok, _messages} -> {:ok, length(mapped_messages)}
+      {:error, reason} -> {:error, reason}
     end
   end
 

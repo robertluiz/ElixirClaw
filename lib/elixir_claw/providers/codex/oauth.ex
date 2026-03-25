@@ -49,8 +49,10 @@ defmodule ElixirClaw.Providers.Codex.OAuth do
     @default_authorize_url <> "?" <> query
   end
 
-  @spec exchange_code(String.t(), String.t(), keyword()) :: {:ok, token_response()} | {:error, term()}
-  def exchange_code(code, code_verifier, opts) when is_binary(code) and is_binary(code_verifier) and is_list(opts) do
+  @spec exchange_code(String.t(), String.t(), keyword()) ::
+          {:ok, token_response()} | {:error, term()}
+  def exchange_code(code, code_verifier, opts)
+      when is_binary(code) and is_binary(code_verifier) and is_list(opts) do
     opts = merged_options(opts)
 
     request_oauth_token(
@@ -104,7 +106,10 @@ defmodule ElixirClaw.Providers.Codex.OAuth do
 
   defp validate_response(%Req.Response{status: status}) when status in 200..299, do: :ok
   defp validate_response(%Req.Response{status: 401}), do: {:error, :unauthorized}
-  defp validate_response(%Req.Response{status: status}) when status >= 500, do: {:error, :server_error}
+
+  defp validate_response(%Req.Response{status: status}) when status >= 500,
+    do: {:error, :server_error}
+
   defp validate_response(%Req.Response{}), do: {:error, :request_failed}
 
   defp decode_body(body) when is_map(body), do: {:ok, body}
@@ -118,7 +123,9 @@ defmodule ElixirClaw.Providers.Codex.OAuth do
 
   defp decode_body(_body), do: {:error, :invalid_response}
 
-  defp normalize_token_response(%{"access_token" => access_token, "expires_in" => expires_in} = body)
+  defp normalize_token_response(
+         %{"access_token" => access_token, "expires_in" => expires_in} = body
+       )
        when is_binary(access_token) do
     with {:ok, expires_in} <- normalize_expires_in(expires_in) do
       {:ok,
@@ -156,8 +163,9 @@ defmodule ElixirClaw.Providers.Codex.OAuth do
     end
   end
 
-  defp localhost_url?(%URI{scheme: "http", host: host}) when host in ["localhost", "127.0.0.1", "::1"],
-    do: true
+  defp localhost_url?(%URI{scheme: "http", host: host})
+       when host in ["localhost", "127.0.0.1", "::1"],
+       do: true
 
   defp localhost_url?(_uri), do: false
 

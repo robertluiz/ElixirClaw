@@ -14,7 +14,14 @@ defmodule ElixirClaw.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: ElixirClaw.Supervisor]
-    Supervisor.start_link(child_specs(), opts)
+    case Supervisor.start_link(child_specs(), opts) do
+      {:ok, _pid} = result ->
+        :ok = ElixirClaw.Tools.Bootstrap.register_builtin_tools()
+        result
+
+      other ->
+        other
+    end
   end
 
   def child_specs do
@@ -25,6 +32,9 @@ defmodule ElixirClaw.Application do
       {Phoenix.PubSub, name: ElixirClaw.PubSub},
       {Task.Supervisor, name: ElixirClaw.ToolSupervisor},
       {ElixirClaw.Tools.Registry, name: ElixirClaw.Tools.Registry},
+      ElixirClaw.Agent.MemoryGraphIndexer,
+      ElixirClaw.Providers.Codex.TokenManager,
+      ElixirClaw.Providers.Copilot.TokenManager,
       ElixirClaw.MCP.Supervisor
     ] ++ optional_memory_consolidator_child_specs() ++ [ElixirClaw.Channels.Supervisor]
   end

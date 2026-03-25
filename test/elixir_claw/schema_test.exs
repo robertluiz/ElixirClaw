@@ -5,17 +5,8 @@ defmodule ElixirClaw.SchemaTest do
   alias ElixirClaw.Schema.Message
   alias ElixirClaw.Schema.Session
 
-  import Ecto.Query
-
   setup_all do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
-    create_test_tables!()
-
-    on_exit(fn ->
-      Ecto.Adapters.SQL.Sandbox.checkin(Repo)
-    end)
-
+    Repo.reset!()
     :ok
   end
 
@@ -110,10 +101,7 @@ defmodule ElixirClaw.SchemaTest do
     _other_message = message_fixture(other_session, %{content: "third"})
 
     messages =
-      Message
-      |> where([message], message.session_id == ^session.id)
-      |> order_by([message], asc: message.inserted_at)
-      |> Repo.all()
+      Repo.list_session_messages(session.id)
 
     assert Enum.map(messages, & &1.id) == [message_1.id, message_2.id]
     assert Enum.map(messages, & &1.content) == ["first", "second"]
@@ -188,38 +176,4 @@ defmodule ElixirClaw.SchemaTest do
     end)
   end
 
-  defp create_test_tables! do
-    Repo.query!("PRAGMA foreign_keys = ON")
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      channel TEXT NOT NULL,
-      channel_user_id TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      model TEXT,
-      token_count_in INTEGER NOT NULL DEFAULT 0,
-      token_count_out INTEGER NOT NULL DEFAULT 0,
-      metadata TEXT,
-      inserted_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-    """)
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
-      content TEXT NOT NULL,
-      tool_calls TEXT,
-      tool_call_id TEXT,
-      token_count INTEGER NOT NULL DEFAULT 0,
-      inserted_at TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
-    """)
-
-    Repo.query!("CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id)")
-  end
 end

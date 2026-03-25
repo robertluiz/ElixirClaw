@@ -17,6 +17,12 @@ base_url = "https://api.anthropic.com"
 api_key = "YOUR_KEY_HERE"
 model = "gemini-2.0-flash"
 
+[providers.codex]
+model = "codex-mini"
+
+[providers.github_copilot]
+model = "gpt-4o-mini"
+
 # --- Telegram Channel ---
 [channels.telegram]
 bot_token = "YOUR_KEY_HERE"
@@ -30,6 +36,13 @@ guild_id = ""
 # --- Skills ---
 [skills]
 skills_dir = "./skills"
+
+# --- Specialized Task Agents ---
+[[task_agents]]
+name = "release-manager"
+description = "Coordinate release readiness"
+system_prompt = "You own release preparation, verification, and final readiness checks."
+tasks = ["Review changelog", "Verify release checklist", "Summarize release risks"]
 
 # --- Database ---
 [database]
@@ -63,3 +76,7 @@ client_id = "YOUR_KEY_HERE"
 client_secret = "YOUR_KEY_HERE"
 authorize_url = ""
 token_url = ""
+
+# OAuth login commands:
+#   mix codex.login
+#   mix copilot.login

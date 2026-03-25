@@ -1,0 +1,4 @@
+[[task_agents]]
+name = "release-manager"
+description = "Prepares releases"
+tasks = ["Validate changelog"]

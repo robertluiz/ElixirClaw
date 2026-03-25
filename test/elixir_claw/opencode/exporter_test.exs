@@ -8,8 +8,7 @@ defmodule ElixirClaw.OpenCode.ExporterTest do
   alias ElixirClaw.Types.Message, as: SessionMessage
 
   setup do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Repo)
-    create_test_tables!()
+    Repo.reset!()
     Repo.delete_all(Message)
     Repo.delete_all(Session)
     kill_session_processes()
@@ -176,7 +175,10 @@ defmodule ElixirClaw.OpenCode.ExporterTest do
                       %{"role" => "user", "content" => [%{"type" => "text", "text" => "hello"}]}}
 
       assert_receive {:exported_message,
-                      %{"role" => "assistant", "content" => [%{"type" => "text", "text" => "hi there"}]}}
+                      %{
+                        "role" => "assistant",
+                        "content" => [%{"type" => "text", "text" => "hi there"}]
+                      }}
 
       assert 2 == Agent.get(request_count, & &1)
     end
@@ -225,43 +227,10 @@ defmodule ElixirClaw.OpenCode.ExporterTest do
     :exit, _reason -> :ok
   end
 
-  defp create_test_tables! do
-    Repo.query!("PRAGMA foreign_keys = ON")
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      channel TEXT NOT NULL,
-      channel_user_id TEXT NOT NULL,
-      provider TEXT NOT NULL,
-      model TEXT,
-      token_count_in INTEGER NOT NULL DEFAULT 0,
-      token_count_out INTEGER NOT NULL DEFAULT 0,
-      metadata TEXT,
-      inserted_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    )
-    """)
-
-    Repo.query!("""
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      session_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system', 'tool')),
-      content TEXT NOT NULL,
-      tool_calls TEXT,
-      tool_call_id TEXT,
-      token_count INTEGER NOT NULL DEFAULT 0,
-      inserted_at TEXT NOT NULL,
-      FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
-    )
-    """)
-
-    Repo.query!("CREATE INDEX IF NOT EXISTS messages_session_id_index ON messages(session_id)")
-  end
-
   defp start_hanging_server(delay_ms) do
-    {:ok, listener} = :gen_tcp.listen(0, [:binary, active: false, ip: {127, 0, 0, 1}, reuseaddr: true])
+    {:ok, listener} =
+      :gen_tcp.listen(0, [:binary, active: false, ip: {127, 0, 0, 1}, reuseaddr: true])
+
     {:ok, port} = :inet.port(listener)
 
     pid =
@@ -276,7 +245,9 @@ defmodule ElixirClaw.OpenCode.ExporterTest do
   end
 
   defp start_closing_server do
-    {:ok, listener} = :gen_tcp.listen(0, [:binary, active: false, ip: {127, 0, 0, 1}, reuseaddr: true])
+    {:ok, listener} =
+      :gen_tcp.listen(0, [:binary, active: false, ip: {127, 0, 0, 1}, reuseaddr: true])
+
     {:ok, port} = :inet.port(listener)
 
     pid =

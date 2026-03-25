@@ -173,7 +173,8 @@ defmodule ElixirClaw.Providers.Anthropic do
   defp maybe_add_text_block(blocks, ""), do: blocks
   defp maybe_add_text_block(blocks, text), do: blocks ++ [%{"type" => "text", "text" => text}]
 
-  defp validate_stream_response(%Req.Response{status: status, body: body}) when status in 200..299 do
+  defp validate_stream_response(%Req.Response{status: status, body: body})
+       when status in 200..299 do
     if Enumerable.impl_for(body), do: :ok, else: {:error, :stream_error}
   end
 
@@ -259,13 +260,20 @@ defmodule ElixirClaw.Providers.Anthropic do
     {[], next_state}
   end
 
-  defp handle_stream_event("content_block_delta", %{"delta" => %{"type" => "text_delta", "text" => text}}, state) do
+  defp handle_stream_event(
+         "content_block_delta",
+         %{"delta" => %{"type" => "text_delta", "text" => text}},
+         state
+       ) do
     {[%{delta: text, finish_reason: nil, tool_calls: [], token_usage: nil}], state}
   end
 
   defp handle_stream_event(
          "content_block_delta",
-         %{"index" => index, "delta" => %{"type" => "input_json_delta", "partial_json" => partial_json}},
+         %{
+           "index" => index,
+           "delta" => %{"type" => "input_json_delta", "partial_json" => partial_json}
+         },
          state
        ) do
     next_state =
@@ -384,7 +392,10 @@ defmodule ElixirClaw.Providers.Anthropic do
   defp decode_body(_body), do: {:error, :invalid_response}
 
   defp sanitize_http_error(%Req.Response{status: 401}), do: {:error, :unauthorized}
-  defp sanitize_http_error(%Req.Response{status: status}) when status >= 500, do: {:error, :server_error}
+
+  defp sanitize_http_error(%Req.Response{status: status}) when status >= 500,
+    do: {:error, :server_error}
+
   defp sanitize_http_error(%Req.Response{}), do: {:error, :request_failed}
 
   defp fetch_api_key do
@@ -414,8 +425,12 @@ defmodule ElixirClaw.Providers.Anthropic do
   end
 
   defp message_role(message), do: Map.get(message, :role) || Map.get(message, "role")
-  defp message_tool_call_id(message), do: Map.get(message, :tool_call_id) || Map.get(message, "tool_call_id")
-  defp message_tool_calls(message), do: Map.get(message, :tool_calls) || Map.get(message, "tool_calls")
+
+  defp message_tool_call_id(message),
+    do: Map.get(message, :tool_call_id) || Map.get(message, "tool_call_id")
+
+  defp message_tool_calls(message),
+    do: Map.get(message, :tool_calls) || Map.get(message, "tool_calls")
 
   defp message_content_text(message) do
     case Map.get(message, :content) || Map.get(message, "content") do

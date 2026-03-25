@@ -3,8 +3,6 @@ defmodule ElixirClaw.Agent.Memory do
   Consolidates long conversation histories into a single summary message.
   """
 
-  import Ecto.Query
-
   alias ElixirClaw.Agent.ContextBuilder
   alias ElixirClaw.Repo
   alias ElixirClaw.Schema.{Message, Session}
@@ -15,7 +13,8 @@ defmodule ElixirClaw.Agent.Memory do
           {:ok, %{summary: String.t(), messages_archived: non_neg_integer()}}
           | {:ok, :not_needed}
           | {:error, term()}
-  def consolidate(session_id, provider, opts \\ []) when is_binary(session_id) and is_atom(provider) do
+  def consolidate(session_id, provider, opts \\ [])
+      when is_binary(session_id) and is_atom(provider) do
     with %Session{} <- Repo.get(Session, session_id),
          true <- consolidation_needed?(session_id, opts),
          messages when is_list(messages) <- list_session_messages(session_id),
@@ -30,7 +29,8 @@ defmodule ElixirClaw.Agent.Memory do
   end
 
   @spec consolidation_needed?(String.t(), keyword()) :: boolean()
-  def consolidation_needed?(session_id, opts \\ []) when is_binary(session_id) and is_list(opts) do
+  def consolidation_needed?(session_id, opts \\ [])
+      when is_binary(session_id) and is_list(opts) do
     session_id
     |> total_token_count()
     |> Kernel.>(threshold(opts))
@@ -53,47 +53,30 @@ defmodule ElixirClaw.Agent.Memory do
 
   defp replace_messages(session_id, messages, summary) do
     archived_count = length(messages)
-    summary_token_count = ContextBuilder.estimate_tokens(summary)
+    wrapped_summary = ContextBuilder.wrap_memory_summary(summary)
+    summary_token_count = ContextBuilder.estimate_tokens(wrapped_summary)
 
-    Repo.transaction(fn ->
-      from(message in Message, where: message.session_id == ^session_id)
-      |> Repo.delete_all()
+    summary_message = %Message{
+      id: Ecto.UUID.generate(),
+      session_id: session_id,
+      role: "assistant",
+      content: wrapped_summary,
+      token_count: summary_token_count,
+      inserted_at: DateTime.utc_now() |> DateTime.to_naive() |> NaiveDateTime.truncate(:second)
+    }
 
-      %Message{}
-      |> Message.changeset(%{
-        session_id: session_id,
-        role: "system",
-        content: summary,
-        token_count: summary_token_count
-      })
-      |> Repo.insert!()
-
-      %{summary: summary, messages_archived: archived_count}
-    end)
-    |> case do
-      {:ok, result} -> {:ok, result}
+    case Repo.replace_session_messages(session_id, [summary_message]) do
+      {:ok, _messages} -> {:ok, %{summary: summary, messages_archived: archived_count}}
       {:error, reason} -> {:error, reason}
     end
   end
 
   defp list_session_messages(session_id) do
-    from(message in Message,
-      where: message.session_id == ^session_id,
-      order_by: [asc: message.inserted_at, asc: fragment("rowid")]
-    )
-    |> Repo.all()
+    Repo.list_session_messages(session_id)
   end
 
   defp total_token_count(session_id) do
-    from(message in Message,
-      where: message.session_id == ^session_id,
-      select: sum(message.token_count)
-    )
-    |> Repo.one()
-    |> case do
-      nil -> 0
-      total -> total
-    end
+    Repo.sum_session_message_tokens(session_id)
   end
 
   defp threshold(opts) do

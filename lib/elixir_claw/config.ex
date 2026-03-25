@@ -6,6 +6,7 @@ defmodule ElixirClaw.Config do
     :providers,
     :channels,
     :database_path,
+    task_agents: [],
     skills_dir: nil,
     max_context_tokens: 4096,
     summarization_threshold: 0.6,

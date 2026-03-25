@@ -5,7 +5,7 @@ defmodule ElixirClaw.Test.Factory do
   """
 
   alias ElixirClaw.Repo
-  alias ElixirClaw.Schema.{Session, Message}
+  alias ElixirClaw.Schema.{Message, Session}
 
   @doc """
   Insert a Session Ecto record into the test database.
