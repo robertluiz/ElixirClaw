@@ -9,7 +9,8 @@ defmodule ElixirClaw.MixProject do
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
-      releases: releases()
+      releases: releases(),
+      aliases: aliases()
     ]
   end
 
@@ -49,6 +50,12 @@ defmodule ElixirClaw.MixProject do
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mox, "~> 1.1", only: :test},
       {:bypass, "~> 2.1", only: :test}
+    ]
+  end
+
+  defp aliases do
+    [
+      setup: ["claw.install"]
     ]
   end
 end

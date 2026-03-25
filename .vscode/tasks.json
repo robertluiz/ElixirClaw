@@ -1,0 +1,64 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Bootstrap workspace",
+      "type": "shell",
+      "command": "mix",
+      "args": [
+        "setup"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Compile project",
+      "type": "shell",
+      "command": "mix",
+      "args": [
+        "compile"
+      ],
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Run test suite",
+      "type": "shell",
+      "command": "mix",
+      "args": [
+        "test"
+      ],
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Run ElixirClaw",
+      "type": "shell",
+      "command": "mix",
+      "args": [
+        "run",
+        "--no-halt"
+      ],
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "label": "Login Codex",
+      "type": "shell",
+      "command": "mix",
+      "args": [
+        "codex.login"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Login GitHub Copilot",
+      "type": "shell",
+      "command": "mix",
+      "args": [
+        "copilot.login"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

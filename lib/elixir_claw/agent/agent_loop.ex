@@ -28,19 +28,19 @@ defmodule ElixirClaw.Agent.Loop do
          execution_profile = execution_profile(session),
          {:ok, provider} <- resolve_provider(session, execution_profile),
          %Session{} = session_with_history <- load_session_history(session),
-           {messages, _metadata} <-
-              ContextBuilder.build_context(session_with_history, [],
-                system_prompt: Canary.system_prompt(session_id),
-               user_message: sanitized_user_message
-             ),
-           {:ok, %ProviderResponse{} = response} <-
-             run_tool_loop(provider_messages(messages), provider, provider_tools(session),
-               session: session,
-               session_id: session_id,
-               model: execution_profile.model,
-              tool_registry: tool_registry(),
-              max_iterations: max_iterations()
-            ) do
+         {messages, _metadata} <-
+           ContextBuilder.build_context(session_with_history, [],
+             system_prompt: Canary.system_prompt(session_id),
+             user_message: sanitized_user_message
+           ),
+         {:ok, %ProviderResponse{} = response} <-
+           run_tool_loop(provider_messages(messages), provider, provider_tools(session),
+             session: session,
+             session_id: session_id,
+             model: execution_profile.model,
+             tool_registry: tool_registry(),
+             max_iterations: max_iterations()
+           ) do
       normalized_response = response |> normalize_final_response() |> protect_response(session_id)
 
       persist_message!(session_id, "user", sanitized_user_message)
@@ -62,6 +62,13 @@ defmodule ElixirClaw.Agent.Loop do
   defp run_tool_loop(messages, provider, tools, opts, iteration \\ 0)
 
   defp run_tool_loop(messages, provider, tools, opts, iteration) do
+    provider_name = provider_name(provider, opts[:session], opts[:model])
+    model = opts[:model]
+
+    Logger.info(
+      "Attempting provider call for session #{opts[:session_id]} with provider=#{provider_name} model=#{inspect(model)}"
+    )
+
     case provider.chat(messages, provider_opts(opts[:model], tools)) do
       {:ok, %ProviderResponse{} = response} ->
         token_usage = normalize_token_usage(response.token_usage)
@@ -133,8 +140,9 @@ defmodule ElixirClaw.Agent.Loop do
                tool_call.arguments,
                tool_context(session),
                tool_registry
-              ) do
-          {:ok, output} -> output |> ContextBuilder.sanitize_user_content() |> ContextBuilder.wrap_tool_output()
+             ) do
+          {:ok, output} ->
+            output |> ContextBuilder.sanitize_user_content() |> ContextBuilder.wrap_tool_output()
 
           {:error, {:approval_required, tool_name}} ->
             :ok = Manager.request_tool_approval(session.id, tool_name)
@@ -197,6 +205,13 @@ defmodule ElixirClaw.Agent.Loop do
   defp provider_opts(model, []), do: [model: model]
   defp provider_opts(model, tools), do: [model: model, tools: tools]
 
+  defp provider_name(_provider, %Session{provider: provider_name}, _model)
+       when is_binary(provider_name) and provider_name != "",
+       do: provider_name
+
+  defp provider_name(provider, _session, _model) when is_atom(provider), do: inspect(provider)
+  defp provider_name(provider, _session, _model), do: inspect(provider)
+
   defp record_token_usage(session_id, %TokenUsage{} = token_usage) do
     Logger.info(
       "Session #{session_id}: #{token_usage.input} in / #{token_usage.output} out tokens"
@@ -233,7 +248,11 @@ defmodule ElixirClaw.Agent.Loop do
       case Manager.get_session(session_id) do
         {:ok, %Session{metadata: %{"pending_tool_approvals" => [tool_name | _]}}}
         when is_binary(tool_name) ->
-          %ProviderResponse{response | content: approval_required_message(tool_name), tool_calls: nil}
+          %ProviderResponse{
+            response
+            | content: approval_required_message(tool_name),
+              tool_calls: nil
+          }
 
         _other ->
           response

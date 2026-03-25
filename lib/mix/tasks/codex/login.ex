@@ -24,7 +24,7 @@ defmodule Mix.Tasks.Codex.Login do
       |> String.trim()
 
     token_exchange = oauth_override(:auth_code_exchange, &OAuth.exchange_code/3)
-    token_store = oauth_override(:token_store, &TokenManager.store_token/1)
+    token_store = oauth_override(:token_store, &TokenManager.persist_token_response/1)
     oauth_opts = Application.get_env(:elixir_claw, OAuth, [])
 
     case token_exchange.(code, pkce.verifier, oauth_opts) do

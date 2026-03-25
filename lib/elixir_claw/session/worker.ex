@@ -38,11 +38,19 @@ defmodule ElixirClaw.Session.Worker do
   def get_session(server), do: GenServer.call(server, :get_session)
   def record_call(server, token_usage), do: GenServer.call(server, {:record_call, token_usage})
   def approve_tools(server, tool_names), do: GenServer.call(server, {:approve_tools, tool_names})
-  def request_tool_approval(server, tool_name), do: GenServer.call(server, {:request_tool_approval, tool_name})
-  def set_task_agent(server, task_agent_name), do: GenServer.call(server, {:set_task_agent, task_agent_name})
+
+  def request_tool_approval(server, tool_name),
+    do: GenServer.call(server, {:request_tool_approval, tool_name})
+
+  def set_task_agent(server, task_agent_name),
+    do: GenServer.call(server, {:set_task_agent, task_agent_name})
+
   def clear_task_agent(server), do: GenServer.call(server, :clear_task_agent)
   def create_task_agent(server, attrs), do: GenServer.call(server, {:create_task_agent, attrs})
-  def put_metadata(server, metadata_updates), do: GenServer.call(server, {:put_metadata, metadata_updates})
+
+  def put_metadata(server, metadata_updates),
+    do: GenServer.call(server, {:put_metadata, metadata_updates})
+
   def end_session(server), do: GenServer.call(server, :end_session)
 
   def via_tuple(session_id) do
@@ -138,7 +146,9 @@ defmodule ElixirClaw.Session.Worker do
       |> Enum.uniq()
       |> Enum.sort()
 
-    updated_metadata = Map.put(state.session.metadata || %{}, "pending_tool_approvals", pending_tool_approvals)
+    updated_metadata =
+      Map.put(state.session.metadata || %{}, "pending_tool_approvals", pending_tool_approvals)
+
     updated_session = %{state.session | metadata: updated_metadata}
 
     persist_session_metadata!(updated_session.id, updated_metadata)
@@ -146,12 +156,15 @@ defmodule ElixirClaw.Session.Worker do
     {:reply, :ok, %{state | session: updated_session}}
   end
 
-  def handle_call({:set_task_agent, task_agent_name}, _from, state) when is_binary(task_agent_name) do
+  def handle_call({:set_task_agent, task_agent_name}, _from, state)
+      when is_binary(task_agent_name) do
     runtime_agents = Map.get(state.session.metadata || %{}, "runtime_task_agents", [])
 
     case TaskAgent.fetch(task_agent_name, runtime_agents) do
       {:ok, _task_agent} ->
-        updated_metadata = Map.put(state.session.metadata || %{}, "active_task_agent", task_agent_name)
+        updated_metadata =
+          Map.put(state.session.metadata || %{}, "active_task_agent", task_agent_name)
+
         updated_session = %{state.session | metadata: updated_metadata}
 
         persist_session_metadata!(updated_session.id, updated_metadata)
@@ -172,7 +185,9 @@ defmodule ElixirClaw.Session.Worker do
       |> Enum.reject(&(Map.get(&1, "name") == task_agent.name))
       |> Kernel.++([TaskAgent.to_metadata(task_agent)])
 
-    updated_metadata = Map.put(state.session.metadata || %{}, "runtime_task_agents", runtime_agents)
+    updated_metadata =
+      Map.put(state.session.metadata || %{}, "runtime_task_agents", runtime_agents)
+
     updated_session = %{state.session | metadata: updated_metadata}
 
     persist_session_metadata!(updated_session.id, updated_metadata)
@@ -183,7 +198,8 @@ defmodule ElixirClaw.Session.Worker do
       {:reply, {:error, Exception.message(error)}, state}
   end
 
-  def handle_call({:put_metadata, metadata_updates}, _from, state) when is_map(metadata_updates) do
+  def handle_call({:put_metadata, metadata_updates}, _from, state)
+      when is_map(metadata_updates) do
     updated_metadata = Map.merge(state.session.metadata || %{}, metadata_updates)
     updated_session = %{state.session | metadata: updated_metadata}
 

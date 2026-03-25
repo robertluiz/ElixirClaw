@@ -269,15 +269,19 @@ defmodule ElixirClaw.Repo do
   end
 
   defp delete_all_records(state, Message), do: delete_relation_rows(state, @messages_relation)
-  defp delete_all_records(state, GraphNode), do: delete_relation_rows(state, @graph_nodes_relation)
-  defp delete_all_records(state, GraphEdge), do: delete_relation_rows(state, @graph_edges_relation)
+
+  defp delete_all_records(state, GraphNode),
+    do: delete_relation_rows(state, @graph_nodes_relation)
+
+  defp delete_all_records(state, GraphEdge),
+    do: delete_relation_rows(state, @graph_edges_relation)
 
   defp list_messages(state, session_id) do
     state
     |> export_rows(@messages_relation)
     |> Enum.map(&message_from_row/1)
     |> Enum.filter(&(&1.session_id == session_id))
-      |> Enum.sort_by(&{&1.inserted_at, &1.id})
+    |> Enum.sort_by(&{&1.inserted_at, &1.id})
   end
 
   defp list_graph_nodes_for_session(state, session_id) do

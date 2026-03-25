@@ -4,7 +4,18 @@ defmodule ElixirClaw.Agent.TaskAgent do
   """
 
   @enforce_keys [:name, :description, :system_prompt, :tasks]
-  defstruct [:name, :description, :system_prompt, :tasks, :provider, :model, skills: [], mcp_servers: [], model_tier: :standard, source: :built_in]
+  defstruct [
+    :name,
+    :description,
+    :system_prompt,
+    :tasks,
+    :provider,
+    :model,
+    skills: [],
+    mcp_servers: [],
+    model_tier: :standard,
+    source: :built_in
+  ]
 
   @type t :: %__MODULE__{
           name: String.t(),
@@ -113,9 +124,13 @@ defmodule ElixirClaw.Agent.TaskAgent do
     case value do
       text when is_binary(text) ->
         trimmed = String.trim(text)
-        if byte_size(trimmed) > 0, do: trimmed, else: raise(ArgumentError, "task agent #{string_key} must be a non-empty string")
 
-      _invalid -> raise ArgumentError, "task agent #{string_key} must be a non-empty string"
+        if byte_size(trimmed) > 0,
+          do: trimmed,
+          else: raise(ArgumentError, "task agent #{string_key} must be a non-empty string")
+
+      _invalid ->
+        raise ArgumentError, "task agent #{string_key} must be a non-empty string"
     end
   end
 
@@ -180,12 +195,15 @@ defmodule ElixirClaw.Agent.TaskAgent do
 
   defp fetch_optional_string(attrs, string_key, atom_key) do
     case Map.get(attrs, string_key) || Map.get(attrs, atom_key) do
-      nil -> nil
+      nil ->
+        nil
+
       value when is_binary(value) ->
         trimmed = String.trim(value)
         if trimmed == "", do: nil, else: trimmed
 
-      _other -> nil
+      _other ->
+        nil
     end
   end
 
@@ -202,7 +220,8 @@ defmodule ElixirClaw.Agent.TaskAgent do
     "Execution profile: provider=#{provider}, model=#{model}, tier=#{model_tier}"
   end
 
-  defp maybe_model_line(%__MODULE__{model: model, model_tier: model_tier}) when is_binary(model) do
+  defp maybe_model_line(%__MODULE__{model: model, model_tier: model_tier})
+       when is_binary(model) do
     "Execution profile: model=#{model}, tier=#{model_tier}"
   end
 
@@ -236,7 +255,8 @@ defmodule ElixirClaw.Agent.TaskAgent do
       },
       %__MODULE__{
         name: "test-writer",
-        description: "Expands fast, deterministic tests around behavior, regressions, and edge cases.",
+        description:
+          "Expands fast, deterministic tests around behavior, regressions, and edge cases.",
         system_prompt:
           "Strengthen confidence with clear, behavior-focused tests. Prefer explicit assertions, cover happy paths and edge cases, and keep tests deterministic and readable.",
         tasks: [

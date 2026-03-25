@@ -145,7 +145,9 @@ defmodule ElixirClaw.Agent.MemoryTest do
       assert summary_message.content ==
                "<untrusted_memory_summary>#{summary}</untrusted_memory_summary>"
 
-      assert summary_message.token_count == ContextBuilder.estimate_tokens(summary_message.content)
+      assert summary_message.token_count ==
+               ContextBuilder.estimate_tokens(summary_message.content)
+
       refute summary_message.id in [first.id, second.id]
     end
 
@@ -187,5 +189,4 @@ defmodule ElixirClaw.Agent.MemoryTest do
 
   defp restore_memory_config(nil), do: Application.delete_env(:elixir_claw, Memory)
   defp restore_memory_config(config), do: Application.put_env(:elixir_claw, Memory, config)
-
 end

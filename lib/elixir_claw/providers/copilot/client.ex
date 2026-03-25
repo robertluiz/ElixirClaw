@@ -1,18 +1,21 @@
 defmodule ElixirClaw.Providers.Copilot.Client do
   @moduledoc """
-  GitHub Copilot OAuth provider for OpenAI-compatible chat completions.
+  GitHub Copilot provider implemented primarily through a Node.js bridge
+  backed by the official `@github/copilot-sdk`.
   """
 
   @behaviour ElixirClaw.Provider
 
   require Logger
 
+  alias ElixirClaw.Providers.Copilot.NodeBridge
   alias ElixirClaw.Providers.Copilot.TokenManager
   alias ElixirClaw.Providers.OpenAICompat
   alias ElixirClaw.Types.ProviderResponse
 
   @default_base_url "https://api.githubcopilot.com"
   @default_models ["gpt-4o-mini"]
+  @fallback_models ["gpt-4o-mini", "gpt-4o"]
 
   @impl true
   def name, do: "github_copilot"
@@ -31,25 +34,72 @@ defmodule ElixirClaw.Providers.Copilot.Client do
 
   @impl true
   def chat(messages, opts \\ []) when is_list(messages) and is_list(opts) do
-    with {:ok, request_opts} <- request_options(messages, opts),
-         {:ok, response} <- Req.post(request_opts),
-         :ok <- validate_chat_response(response),
-         {:ok, body} <- decode_body(response.body),
-         {:ok, parsed} <- parse_chat_response(body) do
-      {:ok, parsed}
-    else
-      {:error, _reason} = error -> error
+    case candidate_models(opts) do
+      [] ->
+        {:error, :missing_model}
+
+      [model | fallback_models] ->
+        chat_with_fallback(messages, opts, model, fallback_models)
     end
   end
 
   @impl true
   def stream(messages, opts \\ []) when is_list(messages) and is_list(opts) do
-    with {:ok, request_opts} <- stream_request_options(messages, opts),
-         {:ok, response} <- Req.post(request_opts),
-         :ok <- validate_stream_response(response) do
-      {:ok, build_stream(response.body)}
-    else
-      {:error, _reason} = error -> error
+    case bridge_enabled?() do
+      true ->
+        NodeBridge.stream(messages, opts)
+
+      false ->
+        with {:ok, request_opts} <- stream_request_options(messages, opts),
+             {:ok, response} <- Req.post(request_opts),
+             :ok <- validate_stream_response(response) do
+          {:ok, build_stream(response.body)}
+        else
+          {:error, _reason} = error -> error
+        end
+    end
+  end
+
+  defp bridge_enabled? do
+    Keyword.get(config(), :use_node_bridge, true)
+  end
+
+  defp chat_with_fallback(messages, opts, model, fallback_models) do
+    request_opts = Keyword.put(opts, :model, model)
+
+    case chat_once(messages, request_opts) do
+      {:ok, %ProviderResponse{} = response} ->
+        {:ok, response}
+
+      {:error, :request_failed} when fallback_models != [] ->
+        next_model = hd(fallback_models)
+
+        Logger.warning(
+          "Copilot request failed for model #{model}; retrying with fallback model #{next_model}"
+        )
+
+        chat_with_fallback(messages, opts, next_model, tl(fallback_models))
+
+      {:error, _reason} = error ->
+        error
+    end
+  end
+
+  defp chat_once(messages, opts) do
+    case bridge_enabled?() do
+      true ->
+        NodeBridge.chat(messages, opts)
+
+      false ->
+        with {:ok, request_opts} <- request_options(messages, opts),
+             {:ok, response} <- Req.post(request_opts),
+             :ok <- validate_chat_response(response),
+             {:ok, body} <- decode_body(response.body),
+             {:ok, parsed} <- parse_chat_response(body) do
+          {:ok, parsed}
+        else
+          {:error, _reason} = error -> error
+        end
     end
   end
 
@@ -60,7 +110,7 @@ defmodule ElixirClaw.Providers.Copilot.Client do
        [
          url: chat_completions_url(),
          auth: {:bearer, access_token},
-         headers: [{"content-type", "application/json"}],
+         headers: request_headers(),
          json: request_body(messages, model, opts)
        ]}
     end
@@ -73,7 +123,7 @@ defmodule ElixirClaw.Providers.Copilot.Client do
        [
          url: chat_completions_url(),
          auth: {:bearer, access_token},
-         headers: [{"content-type", "application/json"}],
+         headers: request_headers(),
          json:
            messages
            |> request_body(model, opts)
@@ -92,7 +142,8 @@ defmodule ElixirClaw.Providers.Copilot.Client do
     |> maybe_put("tools", Keyword.get(opts, :tools))
   end
 
-  defp validate_stream_response(%Req.Response{status: status, body: body}) when status in 200..299 do
+  defp validate_stream_response(%Req.Response{status: status, body: body})
+       when status in 200..299 do
     if Enumerable.impl_for(body), do: :ok, else: {:error, :stream_error}
   end
 
@@ -172,7 +223,10 @@ defmodule ElixirClaw.Providers.Copilot.Client do
 
   defp decode_body(_body), do: {:error, :invalid_response}
   defp sanitize_http_error(%Req.Response{status: 401}), do: {:error, :unauthorized}
-  defp sanitize_http_error(%Req.Response{status: status}) when status >= 500, do: {:error, :server_error}
+
+  defp sanitize_http_error(%Req.Response{status: status}) when status >= 500,
+    do: {:error, :server_error}
+
   defp sanitize_http_error(%Req.Response{}), do: {:error, :request_failed}
 
   defp fetch_access_token do
@@ -188,6 +242,34 @@ defmodule ElixirClaw.Providers.Copilot.Client do
       model when is_binary(model) and model != "" -> {:ok, model}
       _missing -> {:error, :missing_model}
     end
+  end
+
+  defp candidate_models(opts) do
+    opts_models = Keyword.get(opts, :models, []) |> List.wrap()
+    direct_model = Keyword.get(opts, :model)
+    configured_model = Keyword.get(config(), :model)
+    configured_models = Keyword.get(config(), :models, []) |> List.wrap()
+
+    [direct_model]
+    |> Kernel.++(opts_models)
+    |> Kernel.++(configured_models)
+    |> Kernel.++([configured_model])
+    |> Kernel.++(@fallback_models)
+    |> Enum.filter(&(is_binary(&1) and String.trim(&1) != ""))
+    |> Enum.uniq()
+  end
+
+  defp request_headers do
+    [
+      {"content-type", "application/json"},
+      {"x-session-affinity", session_affinity()}
+    ]
+  end
+
+  defp session_affinity do
+    16
+    |> :crypto.strong_rand_bytes()
+    |> Base.encode16(case: :lower)
   end
 
   defp config, do: Application.get_env(:elixir_claw, __MODULE__, [])
@@ -211,7 +293,10 @@ defmodule ElixirClaw.Providers.Copilot.Client do
   defp first_choice(_payload), do: %{}
   defp delta_content(%{"delta" => %{"content" => content}}) when is_binary(content), do: content
   defp delta_content(_choice), do: ""
-  defp delta_tool_calls(%{"delta" => %{"tool_calls" => tool_calls}}), do: OpenAICompat.parse_tool_calls(tool_calls)
+
+  defp delta_tool_calls(%{"delta" => %{"tool_calls" => tool_calls}}),
+    do: OpenAICompat.parse_tool_calls(tool_calls)
+
   defp delta_tool_calls(_choice), do: []
   defp finish_reason_atom(%{"finish_reason" => nil}), do: nil
   defp finish_reason_atom(%{"finish_reason" => "stop"}), do: :stop

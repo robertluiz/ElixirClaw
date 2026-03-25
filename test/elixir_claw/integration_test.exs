@@ -144,7 +144,10 @@ defmodule ElixirClaw.IntegrationTest do
 
           assert [
                    %{role: "system", content: _system_prompt},
-                   %{role: "user", content: "<untrusted_user_input>run tool</untrusted_user_input>"}
+                   %{
+                     role: "user",
+                     content: "<untrusted_user_input>run tool</untrusted_user_input>"
+                   }
                  ] =
                    Enum.map(messages, &Map.take(&1, [:role, :content]))
 
@@ -175,16 +178,19 @@ defmodule ElixirClaw.IntegrationTest do
         1 ->
           assert [
                    %{role: "system", content: _system_prompt},
-                   %{role: "user", content: "<untrusted_user_input>run tool</untrusted_user_input>"},
+                   %{
+                     role: "user",
+                     content: "<untrusted_user_input>run tool</untrusted_user_input>"
+                   },
                    %{role: "assistant", tool_calls: [%ToolCall{id: "tool-1", name: "test_tool"}]},
                    %{
                      role: "tool",
                      tool_call_id: "tool-1",
                      content: "<untrusted_tool_output>tool-result:otp</untrusted_tool_output>"
                    }
-                  ] =
-                    Enum.map(
-                      messages,
+                 ] =
+                   Enum.map(
+                     messages,
                      &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id])
                    )
 
@@ -218,7 +224,10 @@ defmodule ElixirClaw.IntegrationTest do
 
           assert [
                    %{role: "system", content: _system_prompt},
-                   %{role: "user", content: "<untrusted_user_input>first turn</untrusted_user_input>"}
+                   %{
+                     role: "user",
+                     content: "<untrusted_user_input>first turn</untrusted_user_input>"
+                   }
                  ] =
                    Enum.map(messages, &Map.take(&1, [:role, :content]))
 
@@ -231,9 +240,18 @@ defmodule ElixirClaw.IntegrationTest do
         1 ->
           history = MapSet.new(Enum.map(messages, &{&1.role, &1.content}))
 
-          assert MapSet.member?(history, {"user", "<untrusted_user_input>first turn</untrusted_user_input>"})
+          assert MapSet.member?(
+                   history,
+                   {"user", "<untrusted_user_input>first turn</untrusted_user_input>"}
+                 )
+
           assert MapSet.member?(history, {"assistant", "first reply"})
-          assert MapSet.member?(history, {"user", "<untrusted_user_input>second turn</untrusted_user_input>"})
+
+          assert MapSet.member?(
+                   history,
+                   {"user", "<untrusted_user_input>second turn</untrusted_user_input>"}
+                 )
+
           assert length(messages) == 4
 
           {:ok,
@@ -366,7 +384,10 @@ defmodule ElixirClaw.IntegrationTest do
 
           assert [
                    %{role: "system", content: _system_prompt},
-                   %{role: "user", content: "<untrusted_user_input>call mcp</untrusted_user_input>"}
+                   %{
+                     role: "user",
+                     content: "<untrusted_user_input>call mcp</untrusted_user_input>"
+                   }
                  ] =
                    Enum.map(messages, &Map.take(&1, [:role, :content]))
 
@@ -390,10 +411,13 @@ defmodule ElixirClaw.IntegrationTest do
         1 ->
           assert [
                    %{role: "system", content: _system_prompt},
-                   %{role: "user", content: "<untrusted_user_input>call mcp</untrusted_user_input>"},
                    %{
-                      role: "assistant",
-                      content: "",
+                     role: "user",
+                     content: "<untrusted_user_input>call mcp</untrusted_user_input>"
+                   },
+                   %{
+                     role: "assistant",
+                     content: "",
                      tool_calls: [
                        %ToolCall{
                          id: "mcp-call-1",
@@ -407,9 +431,9 @@ defmodule ElixirClaw.IntegrationTest do
                      tool_call_id: "mcp-call-1",
                      content: "<untrusted_tool_output>pong</untrusted_tool_output>"
                    }
-                  ] =
-                    Enum.map(
-                      messages,
+                 ] =
+                   Enum.map(
+                     messages,
                      &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id])
                    )
 
@@ -494,7 +518,6 @@ defmodule ElixirClaw.IntegrationTest do
   catch
     :exit, _reason -> :ok
   end
-
 end
 
 defmodule IntegrationMockToolAdapter do

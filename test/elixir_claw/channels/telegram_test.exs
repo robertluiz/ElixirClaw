@@ -1,5 +1,3 @@
-Mox.defmock(ElixirClaw.MockTelegex, for: ElixirClaw.Channels.Telegram.API)
-
 defmodule ElixirClaw.Channels.TelegramTest do
   use ExUnit.Case, async: false
 
@@ -30,6 +28,7 @@ defmodule ElixirClaw.Channels.TelegramTest do
     Application.put_env(:elixir_claw, Telegram,
       bot_token: "123456:test_bot_token",
       telegex_api: ElixirClaw.MockTelegex,
+      agent_loop: ElixirClaw.MockTelegramAgentLoop,
       provider: "openai",
       model: "gpt-4o-mini",
       start_polling: false
@@ -39,6 +38,8 @@ defmodule ElixirClaw.Channels.TelegramTest do
       restore_config(previous_config)
       kill_session_processes()
     end)
+
+    stub(ElixirClaw.MockTelegramAgentLoop, :process_message, fn _session_id, _content -> {:ok, %{}} end)
 
     :ok
   end
@@ -54,8 +55,151 @@ defmodule ElixirClaw.Channels.TelegramTest do
     end
 
     test "starts with valid config" do
+      stub(ElixirClaw.MockTelegex, :send_message, fn _chat_id, _text -> {:ok, %{}} end)
+      stub(ElixirClaw.MockTelegex, :get_updates, fn _opts -> {:ok, []} end)
+      stub(ElixirClaw.MockTelegex, :delete_webhook, fn _opts -> {:ok, true} end)
+      stub(ElixirClaw.MockTelegex, :get_me, fn -> {:ok, %{username: "claw_test_bot"}} end)
+      stub(ElixirClaw.MockTelegramAgentLoop, :process_message, fn _session_id, _content -> {:ok, %{}} end)
+
       assert {:ok, pid} = start_supervised(Telegram)
       assert Process.alive?(pid)
+    end
+
+    test "polls updates on boot and processes /start plus regular messages" do
+      parent = self()
+
+      expect(ElixirClaw.MockTelegex, :delete_webhook, fn [drop_pending_updates: false] ->
+        send(parent, :telegram_deleted_webhook)
+        {:ok, true}
+      end)
+
+      expect(ElixirClaw.MockTelegex, :get_me, fn ->
+        send(parent, :telegram_get_me)
+        {:ok, %{username: "claw_test_bot"}}
+      end)
+
+      expect(ElixirClaw.MockTelegex, :get_updates, fn opts ->
+        send(parent, {:telegram_polled_opts, opts})
+
+        {:ok,
+         [
+           Map.put(private_text_update(501, "/start"), :update_id, 10),
+           Map.put(private_text_update(501, "hello from polling"), :update_id, 11)
+         ]}
+      end)
+
+      stub(ElixirClaw.MockTelegex, :send_message, fn chat_id, text ->
+        send(parent, {:telegram_sent_message, chat_id, text})
+        {:ok, %{message_id: System.unique_integer([:positive])}}
+      end)
+
+      expect(ElixirClaw.MockTelegramAgentLoop, :process_message, fn session_id, "hello from polling" ->
+        send(parent, {:telegram_agent_loop_called, session_id})
+        {:ok, %{}}
+      end)
+
+      assert {:ok, pid} =
+               Telegram.start_link(
+                 bot_token: "123456:test_bot_token",
+                 telegex_api: ElixirClaw.MockTelegex,
+                 agent_loop: ElixirClaw.MockTelegramAgentLoop,
+                 provider: "openai",
+                 model: "gpt-4o-mini",
+                 start_polling: true,
+                 test_pid: parent,
+                 poll_interval: 5,
+                 poll_timeout: 0
+               )
+
+      on_exit(fn -> if Process.alive?(pid), do: GenServer.stop(pid) end)
+
+      assert_receive :telegram_deleted_webhook
+      assert_receive :telegram_get_me
+
+      assert_receive {:telegram_polled_opts, opts}
+      assert opts[:offset] == 0
+      assert opts[:allowed_updates] == ["message"]
+
+      assert_receive {:telegram_sent_message, 501, welcome_text}
+      assert welcome_text =~ "Welcome to ElixirClaw Telegram"
+
+      assert_receive {:telegram_agent_loop_called, session_id}
+
+      state = :sys.get_state(pid)
+      assert state.chat_sessions[501] == session_id
+      assert state.poll_offset == 12
+    end
+
+    test "treats long polling timeouts as debug noise instead of warnings" do
+      log =
+        capture_log(fn ->
+          assert {:ok, pid} =
+                   Telegram.start_link(
+                     bot_token: "123456:test_bot_token",
+                     telegex_api: ElixirClaw.MockTelegex,
+                     agent_loop: ElixirClaw.MockTelegramAgentLoop,
+                     start_polling: false,
+                     test_pid: self()
+                   )
+
+          send(pid, {:telegram_polled, 0, {:error, %Telegex.RequestError{reason: :timeout}}})
+
+          wait_until(fn -> Process.info(pid, :message_queue_len) == {:message_queue_len, 0} end)
+          :sys.get_state(pid)
+
+          GenServer.stop(pid)
+        end)
+
+      assert log =~ "Telegram long polling timed out; restarting poll loop"
+      refute log =~ "Telegram polling failed"
+    end
+
+    test "uses runtime-configured default provider and model when channel config omits them" do
+      stub(ElixirClaw.MockTelegramAgentLoop, :process_message, fn _session_id, _content -> {:ok, %{}} end)
+
+      previous_channel_config = Application.get_env(:elixir_claw, Telegram)
+      previous_default_provider = Application.get_env(:elixir_claw, :default_provider)
+      previous_default_model = Application.get_env(:elixir_claw, :default_model)
+
+      Application.put_env(:elixir_claw, Telegram,
+        bot_token: "123456:test_bot_token",
+        telegex_api: ElixirClaw.MockTelegex,
+        agent_loop: ElixirClaw.MockTelegramAgentLoop,
+        start_polling: false
+      )
+
+      Application.put_env(:elixir_claw, :default_provider, "github_copilot")
+      Application.put_env(:elixir_claw, :default_model, "gpt-5.4-mini")
+
+      on_exit(fn ->
+        if is_nil(previous_channel_config),
+          do: Application.delete_env(:elixir_claw, Telegram),
+          else: Application.put_env(:elixir_claw, Telegram, previous_channel_config)
+
+        if is_nil(previous_default_provider),
+          do: Application.delete_env(:elixir_claw, :default_provider),
+          else: Application.put_env(:elixir_claw, :default_provider, previous_default_provider)
+
+        if is_nil(previous_default_model),
+          do: Application.delete_env(:elixir_claw, :default_model),
+          else: Application.put_env(:elixir_claw, :default_model, previous_default_model)
+      end)
+
+      assert {:ok, pid} =
+               Telegram.start_link(
+                 bot_token: "123456:test_bot_token",
+                 telegex_api: ElixirClaw.MockTelegex,
+                 agent_loop: ElixirClaw.MockTelegramAgentLoop,
+                 start_polling: false,
+                 test_pid: self()
+               )
+
+      on_exit(fn -> if Process.alive?(pid), do: GenServer.stop(pid) end)
+
+      assert {:ok, session_id} = Telegram.process_update(pid, private_text_update(901, "hello"))
+      assert {:ok, session} = Manager.get_session(session_id)
+      assert session.provider == "github_copilot"
+      assert session.model == "gpt-5.4-mini"
     end
   end
 
@@ -123,6 +267,23 @@ defmodule ElixirClaw.Channels.TelegramTest do
 
       state = :sys.get_state(pid)
       assert state.chat_sessions[42] == session_id
+    end
+
+    test "dispatches regular chat messages to the agent loop" do
+      parent = self()
+
+      expect(ElixirClaw.MockTelegramAgentLoop, :process_message, fn session_id, "hello" ->
+        send(parent, {:telegram_processed_message, session_id})
+        {:ok, %{}}
+      end)
+
+      assert {:ok, pid} = start_supervised(Telegram)
+
+      assert {:ok, session_id} = Telegram.process_update(pid, private_text_update(55, "hello"))
+
+      assert_receive {:telegram_processed_message, ^session_id}
+      wait_until(fn -> Process.info(pid, :message_queue_len) == {:message_queue_len, 0} end)
+      :sys.get_state(pid)
     end
 
     test "forwards outgoing bus messages back to Telegram chat" do
@@ -250,5 +411,4 @@ defmodule ElixirClaw.Channels.TelegramTest do
   catch
     :exit, _reason -> :ok
   end
-
 end

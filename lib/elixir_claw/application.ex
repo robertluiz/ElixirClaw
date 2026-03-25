@@ -14,6 +14,7 @@ defmodule ElixirClaw.Application do
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: ElixirClaw.Supervisor]
+
     case Supervisor.start_link(child_specs(), opts) do
       {:ok, _pid} = result ->
         :ok = ElixirClaw.Tools.Bootstrap.register_builtin_tools()

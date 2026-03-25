@@ -3,6 +3,8 @@ defmodule ElixirClaw.Providers.Copilot.OAuth do
   OAuth helpers for the GitHub Copilot device authorization flow.
   """
 
+  @client_id_env "COPILOT_CLIENT_ID"
+  @default_client_id "Iv1.b507a08c87ecfe98"
   @default_device_code_url "https://github.com/login/device/code"
   @default_token_url "https://github.com/login/oauth/access_token"
   @default_scope "read:user"
@@ -24,9 +26,14 @@ defmodule ElixirClaw.Providers.Copilot.OAuth do
           refresh_token_expires_in: pos_integer() | nil
         }
 
+  @spec resolve_options(keyword()) :: keyword()
+  def resolve_options(opts \\ []) when is_list(opts) do
+    merged_options(opts)
+  end
+
   @spec device_code(keyword()) :: {:ok, device_code_response()} | {:error, term()}
   def device_code(opts \\ []) when is_list(opts) do
-    opts = merged_options(opts)
+    opts = resolve_options(opts)
 
     request_form(
       [
@@ -42,14 +49,18 @@ defmodule ElixirClaw.Providers.Copilot.OAuth do
   @spec poll_device_token(String.t(), keyword()) :: {:ok, token_response()} | {:error, term()}
   def poll_device_token(device_code, opts \\ [])
       when is_binary(device_code) and is_list(opts) do
-    opts = merged_options(opts)
+    opts = resolve_options(opts)
 
-    do_poll_device_token(device_code, DateTime.add(DateTime.utc_now(), poll_timeout(opts), :millisecond), opts)
+    do_poll_device_token(
+      device_code,
+      DateTime.add(DateTime.utc_now(), poll_timeout(opts), :millisecond),
+      opts
+    )
   end
 
   @spec refresh_token(String.t(), keyword()) :: {:ok, token_response()} | {:error, term()}
   def refresh_token(refresh_token, opts \\ []) when is_binary(refresh_token) and is_list(opts) do
-    opts = merged_options(opts)
+    opts = resolve_options(opts)
 
     request_form(
       [
@@ -63,16 +74,20 @@ defmodule ElixirClaw.Providers.Copilot.OAuth do
     )
   end
 
-  @spec refresh_token_override(String.t(), keyword()) :: {:ok, token_response()} | {:error, term()}
-  def refresh_token_override(refresh_token, opts \\ []) when is_binary(refresh_token) and is_list(opts) do
-    merged_options(opts)
+  @spec refresh_token_override(String.t(), keyword()) ::
+          {:ok, token_response()} | {:error, term()}
+  def refresh_token_override(refresh_token, opts \\ [])
+      when is_binary(refresh_token) and is_list(opts) do
+    resolved_opts = resolve_options(opts)
+
+    resolved_opts
     |> Keyword.get(:refresh_token)
     |> case do
       refresh_override when is_function(refresh_override, 2) ->
-        refresh_override.(refresh_token, opts)
+        refresh_override.(refresh_token, resolved_opts)
 
       _missing_override ->
-        refresh_token(refresh_token, opts)
+        refresh_token(refresh_token, resolved_opts)
     end
   end
 
@@ -100,7 +115,10 @@ defmodule ElixirClaw.Providers.Copilot.OAuth do
 
   defp validate_response(%Req.Response{status: status}) when status in 200..299, do: :ok
   defp validate_response(%Req.Response{status: 401}), do: {:error, :unauthorized}
-  defp validate_response(%Req.Response{status: status}) when status >= 500, do: {:error, :server_error}
+
+  defp validate_response(%Req.Response{status: status}) when status >= 500,
+    do: {:error, :server_error}
+
   defp validate_response(%Req.Response{}), do: {:error, :request_failed}
 
   defp decode_body(body) when is_map(body), do: {:ok, body}
@@ -213,6 +231,18 @@ defmodule ElixirClaw.Providers.Copilot.OAuth do
   defp poll_interval(opts), do: Keyword.get(opts, :interval, 5) * 1_000
   defp poll_timeout(opts), do: Keyword.get(opts, :poll_timeout_ms, 900_000)
   defp sleep(opts, duration_ms), do: Keyword.get(opts, :sleep, &Process.sleep/1).(duration_ms)
-  defp merged_options(opts), do: Keyword.merge(config(), opts)
+
+  defp merged_options(opts) do
+    opts = Keyword.merge(config(), opts)
+
+    case System.get_env(@client_id_env) do
+      client_id when is_binary(client_id) and client_id != "" ->
+        Keyword.put_new(opts, :client_id, client_id)
+
+      _missing_client_id ->
+        Keyword.put_new(opts, :client_id, @default_client_id)
+    end
+  end
+
   defp config, do: Application.get_env(:elixir_claw, __MODULE__, [])
 end

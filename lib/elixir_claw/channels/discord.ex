@@ -46,7 +46,8 @@ defmodule ElixirClaw.Channels.Discord do
     def end_session(session_id), do: SessionManagerModule.end_session(session_id)
 
     @impl true
-    def approve_tools(session_id, tool_names), do: SessionManagerModule.approve_tools(session_id, tool_names)
+    def approve_tools(session_id, tool_names),
+      do: SessionManagerModule.approve_tools(session_id, tool_names)
   end
 
   defmodule AgentLoop do
@@ -292,7 +293,12 @@ defmodule ElixirClaw.Channels.Discord do
 
     case Map.get(state.session_by_user_channel, key) do
       nil ->
-        _ = state.api.create_message(channel_id(raw_message), "No active session to approve tools for.")
+        _ =
+          state.api.create_message(
+            channel_id(raw_message),
+            "No active session to approve tools for."
+          )
+
         state
 
       session_id when tool_names == [] ->

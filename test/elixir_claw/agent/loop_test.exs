@@ -1,6 +1,7 @@
 defmodule ElixirClaw.Agent.LoopTest do
   use ExUnit.Case, async: false
 
+  import ExUnit.CaptureLog
   import Mox
 
   alias ElixirClaw.Agent.ContextBuilder
@@ -68,7 +69,9 @@ defmodule ElixirClaw.Agent.LoopTest do
       end)
 
       assert {:ok, session_id} =
-               Manager.start_session(base_attrs(channel_user_id: "loop-provider-module", provider: "openai"))
+               Manager.start_session(
+                 base_attrs(channel_user_id: "loop-provider-module", provider: "openai")
+               )
 
       assert Loop.process_message(session_id, "Hello") == {:error, :provider_error}
     end
@@ -117,6 +120,25 @@ defmodule ElixirClaw.Agent.LoopTest do
 
       assert {:ok, %ProviderResponse{content: "Handled with smaller model"}} =
                Loop.process_message(session_id, "Cheap triage please")
+    end
+
+    test "logs the provider and model before attempting the provider call" do
+      assert {:ok, session_id} =
+               Manager.start_session(
+                 base_attrs(channel_user_id: "loop-provider-log", provider: "openai", model: "gpt-4o-mini")
+               )
+
+      log =
+        capture_log(fn ->
+          expect(ElixirClaw.MockProvider, :chat, fn _messages, _opts -> {:error, :no_token} end)
+
+          assert Loop.process_message(session_id, "Hello") == {:error, :provider_error}
+        end)
+
+      assert log =~ "Attempting provider call for session #{session_id}"
+      assert log =~ "provider=openai"
+      assert log =~ ~s(model="gpt-4o-mini")
+      assert log =~ "Provider call failed for session #{session_id}: :no_token"
     end
 
     test "sanitizes input, includes persisted history, publishes the response, records tokens, and persists user + assistant messages" do
@@ -236,10 +258,13 @@ defmodule ElixirClaw.Agent.LoopTest do
           1 ->
             assert [
                      %{role: "system", content: _system_prompt},
-                     %{role: "user", content: "<untrusted_user_input>Run the tool</untrusted_user_input>"},
                      %{
-                        role: "assistant",
-                        tool_calls: [
+                       role: "user",
+                       content: "<untrusted_user_input>Run the tool</untrusted_user_input>"
+                     },
+                     %{
+                       role: "assistant",
+                       tool_calls: [
                          %ToolCall{
                            id: "tool-call-1",
                            name: "mock_tool",
@@ -252,9 +277,9 @@ defmodule ElixirClaw.Agent.LoopTest do
                        tool_call_id: "tool-call-1",
                        content: "<untrusted_tool_output>tool-result:otp</untrusted_tool_output>"
                      }
-                    ] =
-                      Enum.map(
-                        messages,
+                   ] =
+                     Enum.map(
+                       messages,
                        &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id])
                      )
 
@@ -291,7 +316,8 @@ defmodule ElixirClaw.Agent.LoopTest do
                node.node_type == "execution" and node.name == "mock_tool"
              end)
 
-      assert Repo.get!(SessionSchema, session_id).metadata["orchestrator_memory_summary"] =~ "tool-result:otp"
+      assert Repo.get!(SessionSchema, session_id).metadata["orchestrator_memory_summary"] =~
+               "tool-result:otp"
     end
 
     test "stops recursive tool handling when max_iterations is reached", %{
@@ -345,9 +371,13 @@ defmodule ElixirClaw.Agent.LoopTest do
       assert persisted_session.token_count_out == 2
     end
 
-    test "sanitizes tool outputs before they are sent back to the provider", %{tool_registry: tool_registry} do
+    test "sanitizes tool outputs before they are sent back to the provider", %{
+      tool_registry: tool_registry
+    } do
       assert :ok = ToolRegistry.register(tool_registry, LoopMockToolAdapter)
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "loop-tool-sanitize"))
+
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "loop-tool-sanitize"))
 
       expect(ElixirClaw.MockTool, :execute, fn %{"query" => "otp"}, _context ->
         {:ok, "api_key=sk-secret-123456789 Bearer abcdefghijklmnop"}
@@ -370,17 +400,23 @@ defmodule ElixirClaw.Agent.LoopTest do
           _next ->
             assert [
                      %{role: "system", content: _system_prompt},
-                     %{role: "user", content: "<untrusted_user_input>Run the tool</untrusted_user_input>"},
-                     %{role: "assistant", tool_calls: [%ToolCall{id: "tool-call-1", name: "mock_tool"}]},
+                     %{
+                       role: "user",
+                       content: "<untrusted_user_input>Run the tool</untrusted_user_input>"
+                     },
+                     %{
+                       role: "assistant",
+                       tool_calls: [%ToolCall{id: "tool-call-1", name: "mock_tool"}]
+                     },
                      %{
                        role: "tool",
                        tool_call_id: "tool-call-1",
                        content:
                          "<untrusted_tool_output>[REDACTED] [REDACTED]</untrusted_tool_output>"
                      }
-                    ] =
-                      Enum.map(
-                        messages,
+                   ] =
+                     Enum.map(
+                       messages,
                        &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id])
                      )
 
@@ -443,7 +479,9 @@ defmodule ElixirClaw.Agent.LoopTest do
                |> Enum.map(&Map.take(&1, [:role, :content]))
     end
 
-    test "requests approval when a config-privileged tool is called without approval", %{tool_registry: tool_registry} do
+    test "requests approval when a config-privileged tool is called without approval", %{
+      tool_registry: tool_registry
+    } do
       previous_security = Application.get_env(:elixir_claw, :security, %{})
 
       Application.put_env(:elixir_claw, :security, %{
@@ -454,7 +492,9 @@ defmodule ElixirClaw.Agent.LoopTest do
       on_exit(fn -> Application.put_env(:elixir_claw, :security, previous_security) end)
 
       assert :ok = ToolRegistry.register(tool_registry, LoopMockToolAdapter)
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "loop-config-policy"))
+
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "loop-config-policy"))
 
       expect(ElixirClaw.MockProvider, :chat, 3, fn messages, opts ->
         case Process.get(:config_policy_call, 0) do
@@ -466,14 +506,20 @@ defmodule ElixirClaw.Agent.LoopTest do
              %ProviderResponse{
                content: nil,
                tool_calls: [%ToolCall{id: "approval-tool-1", name: "mock_tool", arguments: %{}}],
-                token_usage: %TokenUsage{input: 1, output: 1, total: 2}
-              }}
+               token_usage: %TokenUsage{input: 1, output: 1, total: 2}
+             }}
 
           1 ->
             assert [
                      %{role: "system", content: _system_prompt},
-                     %{role: "user", content: "<untrusted_user_input>First</untrusted_user_input>"},
-                     %{role: "assistant", tool_calls: [%ToolCall{id: "approval-tool-1", name: "mock_tool"}]},
+                     %{
+                       role: "user",
+                       content: "<untrusted_user_input>First</untrusted_user_input>"
+                     },
+                     %{
+                       role: "assistant",
+                       tool_calls: [%ToolCall{id: "approval-tool-1", name: "mock_tool"}]
+                     },
                      %{role: "tool", content: tool_message}
                    ] = Enum.map(messages, &Map.take(&1, [:role, :content, :tool_calls]))
 
@@ -481,22 +527,38 @@ defmodule ElixirClaw.Agent.LoopTest do
             assert [%{function: %{name: "mock_tool"}}] = Keyword.get(opts, :tools, [])
 
             Process.put(:config_policy_call, 2)
-            {:ok, %ProviderResponse{content: "intermediate", token_usage: %TokenUsage{input: 1, output: 1, total: 2}}}
+
+            {:ok,
+             %ProviderResponse{
+               content: "intermediate",
+               token_usage: %TokenUsage{input: 1, output: 1, total: 2}
+             }}
 
           2 ->
             assert [%{function: %{name: "mock_tool"}}] = Keyword.get(opts, :tools, [])
-            {:ok, %ProviderResponse{content: "Approved tools available", token_usage: %TokenUsage{input: 1, output: 1, total: 2}}}
+
+            {:ok,
+             %ProviderResponse{
+               content: "Approved tools available",
+               token_usage: %TokenUsage{input: 1, output: 1, total: 2}
+             }}
         end
       end)
 
-      assert {:ok, %ProviderResponse{content: "Approval required for tool 'mock_tool'. Run /approve mock_tool to continue."}} =
+      assert {:ok,
+              %ProviderResponse{
+                content:
+                  "Approval required for tool 'mock_tool'. Run /approve mock_tool to continue."
+              }} =
                Loop.process_message(session_id, "First")
 
       assert {:ok, session} = Manager.get_session(session_id)
       assert session.metadata["pending_tool_approvals"] == ["mock_tool"]
 
       assert :ok = Manager.approve_tools(session_id, ["mock_tool"])
-      assert {:ok, %ProviderResponse{content: "Approved tools available"}} = Loop.process_message(session_id, "Second")
+
+      assert {:ok, %ProviderResponse{content: "Approved tools available"}} =
+               Loop.process_message(session_id, "Second")
     end
   end
 
@@ -541,7 +603,6 @@ defmodule ElixirClaw.Agent.LoopTest do
   catch
     :exit, _reason -> :ok
   end
-
 end
 
 defmodule LoopMockToolAdapter do

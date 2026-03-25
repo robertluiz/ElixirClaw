@@ -111,14 +111,16 @@ defmodule ElixirClaw.Config.Loader do
           reasons
         end
 
-      _invalid -> ["task_agent #{task_agent_name} #{field} must be a non-empty string" | reasons]
+      _invalid ->
+        ["task_agent #{task_agent_name} #{field} must be a non-empty string" | reasons]
     end
   end
 
   defp validate_task_agent_tasks(reasons, task_agent, task_agent_name) do
     tasks = Map.get(task_agent, "tasks")
 
-    if is_list(tasks) and tasks != [] and Enum.all?(tasks, &(is_binary(&1) and String.trim(&1) != "")) do
+    if is_list(tasks) and tasks != [] and
+         Enum.all?(tasks, &(is_binary(&1) and String.trim(&1) != "")) do
       reasons
     else
       ["task_agent #{task_agent_name} tasks must be a non-empty list of strings" | reasons]

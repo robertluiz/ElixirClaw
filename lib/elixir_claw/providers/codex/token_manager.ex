@@ -27,6 +27,21 @@ defmodule ElixirClaw.Providers.Codex.TokenManager do
     GenServer.call(__MODULE__, {:store_token, token_response})
   end
 
+  @spec persist_token_response(map()) :: :ok | {:error, term()}
+  def persist_token_response(token_response) when is_map(token_response) do
+    case Process.whereis(__MODULE__) do
+      pid when is_pid(pid) ->
+        store_token(token_response)
+
+      nil ->
+        @initial_state
+        |> Map.merge(OAuthTokenStore.load("codex"))
+        |> normalize_state()
+        |> merge_token_response(token_response)
+        |> persist_state()
+    end
+  end
+
   @spec get_token() :: {:ok, String.t()} | {:error, :no_token}
   def get_token do
     GenServer.call(__MODULE__, :get_token)
@@ -103,7 +118,8 @@ defmodule ElixirClaw.Providers.Codex.TokenManager do
         :ok = persist_state(refreshed_state)
         {:ok, refreshed_state}
 
-      {:error, _reason} -> {:error, :no_token}
+      {:error, _reason} ->
+        {:error, :no_token}
     end
   end
 

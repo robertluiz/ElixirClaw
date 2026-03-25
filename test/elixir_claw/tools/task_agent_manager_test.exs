@@ -18,7 +18,8 @@ defmodule ElixirClaw.Tools.TaskAgentManagerTest do
   end
 
   test "creates and activates a runtime specialized agent through the tool" do
-    assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "tool-agent-user"))
+    assert {:ok, session_id} =
+             Manager.start_session(base_attrs(channel_user_id: "tool-agent-user"))
 
     assert {:ok, result} =
              TaskAgentManager.execute(
@@ -45,7 +46,8 @@ defmodule ElixirClaw.Tools.TaskAgentManagerTest do
   end
 
   test "stores skills and mcp server bindings on a runtime specialized agent" do
-    assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "tool-agent-capabilities"))
+    assert {:ok, session_id} =
+             Manager.start_session(base_attrs(channel_user_id: "tool-agent-capabilities"))
 
     assert {:ok, _result} =
              TaskAgentManager.execute(
@@ -69,7 +71,14 @@ defmodule ElixirClaw.Tools.TaskAgentManagerTest do
              )
 
     assert {:ok, %Session{} = session} = Manager.get_session(session_id)
-    assert [%{"name" => "docs-helper", "mcp_servers" => ["docs"], "skills" => [%{"name" => "docs-skill"}]}] = session.metadata["runtime_task_agents"]
+
+    assert [
+             %{
+               "name" => "docs-helper",
+               "mcp_servers" => ["docs"],
+               "skills" => [%{"name" => "docs-skill"}]
+             }
+           ] = session.metadata["runtime_task_agents"]
   end
 
   test "recommends a cheap runtime task agent profile for trivial work" do

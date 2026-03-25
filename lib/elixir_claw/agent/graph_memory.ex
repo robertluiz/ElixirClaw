@@ -66,7 +66,12 @@ defmodule ElixirClaw.Agent.GraphMemory do
     seed_nodes = [
       build_seed_node(session_id, "preference", "user-locale", locale_preference(metadata)),
       build_seed_node(session_id, "style", "response-style", Map.get(metadata, "response_style")),
-      build_seed_node(session_id, "personality", "orchestrator-personality", Map.get(metadata, "orchestrator_personality"))
+      build_seed_node(
+        session_id,
+        "personality",
+        "orchestrator-personality",
+        Map.get(metadata, "orchestrator_personality")
+      )
     ]
 
     seed_nodes
@@ -93,7 +98,10 @@ defmodule ElixirClaw.Agent.GraphMemory do
 
   def refresh_session_summary(session_id, opts \\ []) when is_binary(session_id) do
     with {:ok, summary} <- orchestrator_memory_summary(session_id, opts),
-         :ok <- ElixirClaw.Session.Manager.put_metadata(session_id, %{"orchestrator_memory_summary" => summary}) do
+         :ok <-
+           ElixirClaw.Session.Manager.put_metadata(session_id, %{
+             "orchestrator_memory_summary" => summary
+           }) do
       {:ok, summary}
     end
   end
@@ -176,7 +184,8 @@ defmodule ElixirClaw.Agent.GraphMemory do
 
   defp filter_current_memory_nodes(nodes) do
     Enum.filter(nodes, fn node ->
-      is_nil(node.valid_until) and node.node_type in ["style", "personality", "preference", "day_summary", "execution"]
+      is_nil(node.valid_until) and
+        node.node_type in ["style", "personality", "preference", "day_summary", "execution"]
     end)
   end
 

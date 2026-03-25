@@ -5,8 +5,11 @@ defmodule ElixirClaw.Channels.CLI do
 
   use GenServer
 
+  require Logger
+
   @behaviour ElixirClaw.Channel
 
+  alias ElixirClaw.Agent.Loop, as: AgentLoopModule
   alias ElixirClaw.Bus.MessageBus
   alias ElixirClaw.Agent.TaskAgent
   alias ElixirClaw.Repo
@@ -17,6 +20,20 @@ defmodule ElixirClaw.Channels.CLI do
   @injection_markers ["<|", "|>", "[INST]", "[/INST]", "<<SYS>>", "<</SYS>>"]
   @sensitive_assignment_pattern ~r/((?:api_key|token|secret|password)\s*[:=]\s*)([^\s]+)/i
   @api_key_pattern ~r/\b(?:sk|rk)-[A-Za-z0-9\-_]+\b/
+  defmodule AgentLoop do
+    @moduledoc false
+
+    @callback process_message(String.t(), String.t()) :: {:ok, term()} | {:error, term()}
+  end
+
+  defmodule DefaultAgentLoop do
+    @moduledoc false
+    @behaviour AgentLoop
+
+    @impl true
+    def process_message(session_id, content),
+      do: AgentLoopModule.process_message(session_id, content)
+  end
 
   @type command_result ::
           {:ok, Message.t()}
@@ -142,10 +159,20 @@ defmodule ElixirClaw.Channels.CLI do
       on_input: Map.get(config, :on_input),
       session_id: Map.get(config, :session_id),
       session_manager: Map.get(config, :session_manager, Manager),
+      agent_loop: Map.get(config, :agent_loop, DefaultAgentLoop),
+      provider: Map.get(config, :provider, runtime_default_provider()),
+      model: Map.get(config, :model, runtime_default_model()),
+      channel_user_id:
+        Map.get(config, :channel_user_id, "cli-#{System.unique_integer([:positive])}"),
+      metadata: Map.get(config, :metadata, %{}),
+      test_pid: Map.get(config, :test_pid),
       reader_fun: Map.get(config, :reader_fun, &:io.get_line(&1, "")),
       topics: topics,
+      subscriptions: MapSet.new(topics),
       reader_task: nil
     }
+
+    state = maybe_bootstrap_runtime_session(state)
 
     if state.prompt?, do: print_prompt()
 
@@ -153,11 +180,17 @@ defmodule ElixirClaw.Channels.CLI do
   end
 
   @impl true
+  def terminate(_reason, state) do
+    _state = maybe_end_runtime_session(state)
+    :ok
+  end
+
+  @impl true
   def handle_info({:cli_input, :eof}, state), do: {:stop, :normal, %{state | reader_task: nil}}
 
   def handle_info({:cli_input, {:error, reason}}, state) do
-    send_message(self(), state.session_id || "cli", %{type: :error, content: inspect(reason)})
-    {:stop, reason, %{state | reader_task: nil}}
+    log_cli_input_error(reason, state.device)
+    {:stop, :normal, %{state | reader_task: nil}}
   end
 
   def handle_info({:cli_input, line}, state) when is_binary(line) do
@@ -217,8 +250,20 @@ defmodule ElixirClaw.Channels.CLI do
 
     MessageBus.publish("channel:cli", %{type: :incoming_message, content: message.content})
 
-    if state.prompt?, do: print_prompt()
-    {:noreply, state}
+    case maybe_process_runtime_message(state, message.content) do
+      {:ok, next_state} ->
+        if state.on_input != nil and state.prompt?, do: print_prompt()
+        {:noreply, next_state}
+
+      {:error, reason, next_state} ->
+        send_message(self(), next_state.session_id || "cli", %{
+          type: :error,
+          content: "CLI session unavailable: #{inspect(reason)}"
+        })
+
+        if next_state.prompt?, do: print_prompt()
+        {:noreply, next_state}
+    end
   end
 
   defp dispatch_input_result({:help, text} = result, state) do
@@ -272,14 +317,48 @@ defmodule ElixirClaw.Channels.CLI do
 
   defp dispatch_input_result(:new_session = result, state) do
     maybe_dispatch_input(state.on_input, result)
-    if state.prompt?, do: print_prompt()
-    {:noreply, state}
+
+    case maybe_restart_runtime_session(state) do
+      {:ok, next_state} ->
+        if state.on_input == nil do
+          send_message(self(), next_state.session_id || "cli", "Started a new session.")
+        end
+
+        if next_state.prompt?, do: print_prompt()
+        {:noreply, next_state}
+
+      {:error, reason, next_state} ->
+        send_message(self(), next_state.session_id || "cli", %{
+          type: :error,
+          content: "Failed to start a new session: #{inspect(reason)}"
+        })
+
+        if next_state.prompt?, do: print_prompt()
+        {:noreply, next_state}
+    end
   end
 
-  defp dispatch_input_result({:switch_model, _name} = result, state) do
+  defp dispatch_input_result({:switch_model, name} = result, state) do
     maybe_dispatch_input(state.on_input, result)
-    if state.prompt?, do: print_prompt()
-    {:noreply, state}
+
+    case maybe_switch_runtime_model(state, name) do
+      {:ok, next_state} ->
+        if state.on_input == nil do
+          send_message(self(), next_state.session_id || "cli", "Switched model to #{name}")
+        end
+
+        if next_state.prompt?, do: print_prompt()
+        {:noreply, next_state}
+
+      {:error, reason, next_state} ->
+        send_message(self(), next_state.session_id || "cli", %{
+          type: :error,
+          content: "Failed to switch model: #{inspect(reason)}"
+        })
+
+        if next_state.prompt?, do: print_prompt()
+        {:noreply, next_state}
+    end
   end
 
   defp dispatch_input_result(:quit = result, state) do
@@ -297,6 +376,149 @@ defmodule ElixirClaw.Channels.CLI do
 
   defp maybe_dispatch_input(nil, _result), do: :ok
   defp maybe_dispatch_input(fun, result) when is_function(fun, 1), do: fun.(result)
+
+  defp maybe_bootstrap_runtime_session(%{on_input: nil} = state) do
+    case ensure_runtime_session(state) do
+      {:ok, next_state} -> next_state
+      {:error, reason, next_state} ->
+        Logger.warning("CLI runtime session unavailable during startup: #{inspect(reason)}")
+        next_state
+    end
+  end
+
+  defp maybe_bootstrap_runtime_session(state), do: state
+
+  defp maybe_process_runtime_message(%{on_input: nil} = state, content) do
+    case ensure_runtime_session(state) do
+      {:ok, next_state} ->
+        :ok = publish_session_incoming(next_state.session_id, content)
+        start_agent_loop_task(next_state, next_state.session_id, content)
+        {:ok, next_state}
+
+      {:error, reason, next_state} ->
+        {:error, reason, next_state}
+    end
+  end
+
+  defp maybe_process_runtime_message(state, _content), do: {:ok, state}
+
+  defp maybe_restart_runtime_session(%{on_input: nil} = state) do
+    state = maybe_end_runtime_session(state)
+    ensure_runtime_session(%{state | session_id: nil})
+  end
+
+  defp maybe_restart_runtime_session(state), do: {:ok, state}
+
+  defp maybe_switch_runtime_model(%{on_input: nil} = state, name) do
+    state
+    |> Map.put(:model, name)
+    |> maybe_restart_runtime_session()
+  end
+
+  defp maybe_switch_runtime_model(state, _name), do: {:ok, state}
+
+  defp ensure_runtime_session(%{session_id: session_id} = state) when is_binary(session_id) do
+    {:ok, subscribe_to_session(state, session_id)}
+  end
+
+  defp ensure_runtime_session(state) do
+    attrs = %{
+      channel: "cli",
+      channel_user_id: state.channel_user_id,
+      provider: state.provider,
+      model: state.model,
+      metadata: state.metadata
+    }
+
+    case state.session_manager.start_session(attrs) do
+      {:ok, session_id} ->
+        {:ok, state |> Map.put(:session_id, session_id) |> subscribe_to_session(session_id)}
+
+      {:error, reason} ->
+        {:error, reason, state}
+    end
+  end
+
+  defp subscribe_to_session(state, session_id) do
+    topic = topic(session_id)
+
+    if MapSet.member?(state.subscriptions, topic) do
+      state
+    else
+      :ok = MessageBus.subscribe(topic)
+      %{state | subscriptions: MapSet.put(state.subscriptions, topic)}
+    end
+  end
+
+  defp maybe_end_runtime_session(%{on_input: nil, session_id: session_id} = state)
+       when is_binary(session_id) do
+    topic = topic(session_id)
+
+    if MapSet.member?(state.subscriptions, topic) do
+      :ok = MessageBus.unsubscribe(topic)
+    end
+
+    _ = state.session_manager.end_session(session_id)
+
+    %{
+      state
+      | session_id: nil,
+        subscriptions: MapSet.delete(state.subscriptions, topic)
+    }
+  end
+
+  defp maybe_end_runtime_session(state), do: state
+
+  defp publish_session_incoming(session_id, content) do
+    MessageBus.publish(topic(session_id), %{
+      type: :incoming_message,
+      session_id: session_id,
+      content: content,
+      channel: "cli"
+    })
+  end
+
+  defp start_agent_loop_task(state, session_id, content) do
+    Task.start(fn ->
+      allow_test_mocks(state)
+
+      case state.agent_loop.process_message(session_id, content) do
+        {:ok, _response} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("CLI agent loop failed: #{inspect(reason)}")
+      end
+    end)
+  end
+
+  defp allow_test_mocks(%{test_pid: test_pid} = state) when is_pid(test_pid) do
+    maybe_allow_mock(state.agent_loop, test_pid)
+  end
+
+  defp allow_test_mocks(_state), do: :ok
+
+  defp maybe_allow_mock(module, owner_pid) do
+    if Code.ensure_loaded?(Mox) and function_exported?(module, :__mock_for__, 0) do
+      apply(Mox, :allow, [module, owner_pid, self()])
+    end
+  end
+
+  defp log_cli_input_error(reason, device) do
+    Logger.warning(
+      "CLI input unavailable for #{inspect(device)}: #{inspect(reason)}. Disabling CLI channel without restart."
+    )
+  end
+
+  defp runtime_default_provider do
+    Application.get_env(:elixir_claw, :default_provider, "openai")
+  end
+
+  defp runtime_default_model do
+    Application.get_env(:elixir_claw, :default_model, "gpt-4o-mini")
+  end
+
+  defp topic(session_id), do: "session:#{session_id}"
 
   defp session_info(nil, _session_manager), do: {:error, :missing_session_id}
 
@@ -379,8 +601,11 @@ defmodule ElixirClaw.Channels.CLI do
     end
   end
 
-  defp task_agent_result("", _session_id, _session_manager), do: {:error, :missing_task_agent_name}
-  defp task_agent_result(_task_agent_name, nil, _session_manager), do: {:error, :missing_session_id}
+  defp task_agent_result("", _session_id, _session_manager),
+    do: {:error, :missing_task_agent_name}
+
+  defp task_agent_result(_task_agent_name, nil, _session_manager),
+    do: {:error, :missing_session_id}
 
   defp task_agent_result("create " <> args, session_id, session_manager) do
     create_task_agent_result(args, session_id, session_manager)
@@ -404,7 +629,13 @@ defmodule ElixirClaw.Channels.CLI do
     case parse_task_agent_create_args(args) do
       {:ok, params} ->
         with {:ok, task_agent_name} <- session_manager.create_task_agent(session_id, params),
-             :ok <- maybe_activate_created_task_agent(params, session_id, session_manager, task_agent_name) do
+             :ok <-
+               maybe_activate_created_task_agent(
+                 params,
+                 session_id,
+                 session_manager,
+                 task_agent_name
+               ) do
           {:task_agent_created, task_agent_name}
         else
           {:error, reason} -> {:error, reason}
@@ -415,10 +646,20 @@ defmodule ElixirClaw.Channels.CLI do
     end
   end
 
-  defp maybe_activate_created_task_agent(%{"activate" => true}, session_id, session_manager, task_agent_name),
-    do: session_manager.set_task_agent(session_id, task_agent_name)
+  defp maybe_activate_created_task_agent(
+         %{"activate" => true},
+         session_id,
+         session_manager,
+         task_agent_name
+       ),
+       do: session_manager.set_task_agent(session_id, task_agent_name)
 
-  defp maybe_activate_created_task_agent(_params, _session_id, _session_manager, _task_agent_name), do: :ok
+  defp maybe_activate_created_task_agent(
+         _params,
+         _session_id,
+         _session_manager,
+         _task_agent_name
+       ), do: :ok
 
   defp parse_task_agent_create_args(args) do
     tokens = String.split(args, ~r/\s+/, trim: true)
@@ -441,7 +682,10 @@ defmodule ElixirClaw.Channels.CLI do
 
           key in ["description", "prompt", "model", "tier", "provider"] ->
             mapped_key = cli_create_key(key)
-            new_value = [Map.get(acc, mapped_key), token] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
+
+            new_value =
+              [Map.get(acc, mapped_key), token] |> Enum.reject(&is_nil/1) |> Enum.join(" ")
+
             {Map.put(acc, mapped_key, new_value), key}
 
           key == "tasks" ->
@@ -449,7 +693,15 @@ defmodule ElixirClaw.Channels.CLI do
             {Map.put(acc, "tasks", tasks), nil}
 
           key == "skill" ->
-            skills = Map.get(acc, "skills", []) ++ [%{"name" => token, "content" => "Skill #{token} attached to task agent #{name}."}]
+            skills =
+              Map.get(acc, "skills", []) ++
+                [
+                  %{
+                    "name" => token,
+                    "content" => "Skill #{token} attached to task agent #{name}."
+                  }
+                ]
+
             {Map.put(acc, "skills", skills), nil}
 
           key == "mcp" ->
@@ -515,7 +767,10 @@ defmodule ElixirClaw.Channels.CLI do
   end
 
   defp task_agents_text do
-    ["Available specialized task agents:" | Enum.map(TaskAgent.all(), &"- #{&1.name}: #{&1.description}")]
+    [
+      "Available specialized task agents:"
+      | Enum.map(TaskAgent.all(), &"- #{&1.name}: #{&1.description}")
+    ]
     |> Enum.join("\n")
   end
 

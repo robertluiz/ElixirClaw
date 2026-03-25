@@ -133,8 +133,8 @@ defmodule ElixirClaw.Tools.RegistryTest do
 
       assert {:error, {:approval_required, "privileged_tool"}} =
                Registry.execute(
-                  "privileged_tool",
-                  %{},
+                 "privileged_tool",
+                 %{},
                  %{"metadata" => %{}},
                  :test_registry
                )
@@ -159,7 +159,7 @@ defmodule ElixirClaw.Tools.RegistryTest do
                  %{},
                  %{"metadata" => %{"approved_tools" => ["privileged_tool"]}},
                  :test_registry
-                )
+               )
     end
 
     test "marks tools configured as privileged as pending approval when executed sem autorização" do
@@ -208,7 +208,7 @@ defmodule ElixirClaw.Tools.RegistryTest do
                    parameters: schema
                  }
                }
-              ]
+             ]
     end
 
     test "keeps privileged tools visible to provider format for explicit approval workflow" do
@@ -241,7 +241,7 @@ defmodule ElixirClaw.Tools.RegistryTest do
                    parameters: %{"type" => "object"}
                  }
                }
-              ]
+             ]
     end
 
     test "keeps config-privileged tools visible to provider format for approval workflow" do
@@ -259,6 +259,7 @@ defmodule ElixirClaw.Tools.RegistryTest do
       expect(ElixirClaw.MockTool, :parameters_schema, 2, fn -> %{"type" => "object"} end)
 
       assert :ok = Registry.register(:test_registry, MockToolAdapter)
+
       assert Registry.to_provider_format(:test_registry) == [
                %{
                  type: "function",
@@ -270,7 +271,9 @@ defmodule ElixirClaw.Tools.RegistryTest do
                }
              ]
 
-      assert Registry.to_provider_format(:test_registry, %{"metadata" => %{"approved_tools" => ["mock_tool"]}}) == [
+      assert Registry.to_provider_format(:test_registry, %{
+               "metadata" => %{"approved_tools" => ["mock_tool"]}
+             }) == [
                %{
                  type: "function",
                  function: %{
@@ -279,7 +282,7 @@ defmodule ElixirClaw.Tools.RegistryTest do
                    parameters: %{"type" => "object"}
                  }
                }
-              ]
+             ]
     end
 
     test "filters MCP tools by task-agent attached servers in session metadata" do

@@ -175,5 +175,4 @@ defmodule ElixirClaw.SchemaTest do
       end)
     end)
   end
-
 end

@@ -25,6 +25,7 @@ model = "gpt-4o-mini"
 
 # --- Telegram Channel ---
 [channels.telegram]
+enabled = false
 bot_token = "YOUR_KEY_HERE"
 allowed_chat_ids = []
 

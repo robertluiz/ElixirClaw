@@ -18,7 +18,10 @@ defmodule ElixirClaw.Tools.TaskAgentManager do
     %{
       "type" => "object",
       "properties" => %{
-        "action" => %{"type" => "string", "enum" => ["create", "activate", "deactivate", "recommend"]},
+        "action" => %{
+          "type" => "string",
+          "enum" => ["create", "activate", "deactivate", "recommend"]
+        },
         "name" => %{"type" => "string"},
         "description" => %{"type" => "string"},
         "system_prompt" => %{"type" => "string"},
@@ -37,7 +40,8 @@ defmodule ElixirClaw.Tools.TaskAgentManager do
   end
 
   @impl true
-  def execute(%{"action" => "create"} = params, %{"session_id" => session_id}) when is_binary(session_id) do
+  def execute(%{"action" => "create"} = params, %{"session_id" => session_id})
+      when is_binary(session_id) do
     with {:ok, agent_name} <- Manager.create_task_agent(session_id, params),
          :ok <- maybe_activate(params, session_id, agent_name) do
       {:ok,
@@ -53,7 +57,8 @@ defmodule ElixirClaw.Tools.TaskAgentManager do
     end
   end
 
-  def execute(%{"action" => "deactivate"}, %{"session_id" => session_id}) when is_binary(session_id) do
+  def execute(%{"action" => "deactivate"}, %{"session_id" => session_id})
+      when is_binary(session_id) do
     case Manager.clear_task_agent(session_id) do
       :ok -> {:ok, "Deactivated the current task agent."}
       {:error, reason} -> {:error, reason}
@@ -72,7 +77,9 @@ defmodule ElixirClaw.Tools.TaskAgentManager do
   @impl true
   def timeout_ms, do: 1_000
 
-  defp maybe_activate(%{"activate" => true}, session_id, agent_name), do: Manager.set_task_agent(session_id, agent_name)
+  defp maybe_activate(%{"activate" => true}, session_id, agent_name),
+    do: Manager.set_task_agent(session_id, agent_name)
+
   defp maybe_activate(_params, _session_id, _agent_name), do: :ok
 
   defp recommend_profile(params) do
@@ -81,9 +88,24 @@ defmodule ElixirClaw.Tools.TaskAgentManager do
     needs_mcp = Map.get(params, "needs_mcp", false)
 
     case complexity do
-      "trivial" -> %{tier: "cheap", model: "gpt-4o-mini", attach_skills: false, attach_mcps: false}
-      "complex" -> %{tier: "powerful", model: "gpt-4o", attach_skills: needs_skills or true, attach_mcps: needs_mcp or true}
-      _other -> %{tier: "standard", model: "gpt-4o-mini", attach_skills: needs_skills, attach_mcps: needs_mcp}
+      "trivial" ->
+        %{tier: "cheap", model: "gpt-4o-mini", attach_skills: false, attach_mcps: false}
+
+      "complex" ->
+        %{
+          tier: "powerful",
+          model: "gpt-4o",
+          attach_skills: needs_skills or true,
+          attach_mcps: needs_mcp or true
+        }
+
+      _other ->
+        %{
+          tier: "standard",
+          model: "gpt-4o-mini",
+          attach_skills: needs_skills,
+          attach_mcps: needs_mcp
+        }
     end
   end
 

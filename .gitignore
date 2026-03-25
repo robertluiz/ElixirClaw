@@ -42,3 +42,4 @@ elixir_claw.toml
 node_modules
 .sisyphus
 nul
+config/config.toml

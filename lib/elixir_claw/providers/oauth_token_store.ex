@@ -43,9 +43,13 @@ defmodule ElixirClaw.Providers.OAuthTokenStore do
 
   defp decode_token(contents) do
     with {:ok, decoded} <- Jason.decode(contents) do
-      decoded
-      |> Enum.into(%{}, fn {key, value} -> {normalize_key(key), value} end)
-      |> Map.update(:expires_at, nil, &decode_datetime/1)
+      if is_map(decoded) do
+        decoded
+        |> Enum.into(%{}, fn {key, value} -> {normalize_key(key), value} end)
+        |> Map.update(:expires_at, nil, &decode_datetime/1)
+      else
+        %{}
+      end
     else
       _error -> %{}
     end

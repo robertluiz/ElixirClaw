@@ -21,6 +21,21 @@ defmodule ElixirClaw.Providers.Copilot.TokenManager do
     GenServer.call(__MODULE__, {:store_token, token_response})
   end
 
+  @spec persist_token_response(map()) :: :ok | {:error, term()}
+  def persist_token_response(token_response) when is_map(token_response) do
+    case Process.whereis(__MODULE__) do
+      pid when is_pid(pid) ->
+        store_token(token_response)
+
+      nil ->
+        @initial_state
+        |> Map.merge(OAuthTokenStore.load("copilot"))
+        |> normalize_state()
+        |> merge_token_response(token_response)
+        |> persist_state()
+    end
+  end
+
   @spec get_token() :: {:ok, String.t()} | {:error, :no_token}
   def get_token do
     GenServer.call(__MODULE__, :get_token)
@@ -61,7 +76,10 @@ defmodule ElixirClaw.Providers.Copilot.TokenManager do
 
   def handle_call(:clear_token, _from, _state) do
     cleared_state = clear_state()
-    {:reply, persist_state(cleared_state), cleared_state}
+
+    reply = OAuthTokenStore.clear("copilot")
+
+    {:reply, reply, cleared_state}
   end
 
   defp ensure_current_token(%{access_token: nil} = _state), do: {:error, :no_token}
@@ -102,18 +120,24 @@ defmodule ElixirClaw.Providers.Copilot.TokenManager do
   end
 
   defp merge_token_response(state, token_response) do
+    access_token = resolved_token_value(fetch_token_value(token_response, :access_token), state.access_token)
+    refresh_token = resolved_token_value(fetch_token_value(token_response, :refresh_token), state.refresh_token)
+
     expires_at =
       case fetch_token_value(token_response, :expires_in) do
         expires_in when is_integer(expires_in) and expires_in > 0 ->
           DateTime.add(DateTime.utc_now(), expires_in, :second)
 
-        _missing ->
+        _missing when access_token != state.access_token ->
           nil
+
+        _missing ->
+          state.expires_at
       end
 
     %{
-      access_token: fetch_token_value(token_response, :access_token),
-      refresh_token: fetch_token_value(token_response, :refresh_token) || state.refresh_token,
+      access_token: access_token,
+      refresh_token: refresh_token,
       expires_at: expires_at
     }
   end
@@ -122,8 +146,9 @@ defmodule ElixirClaw.Providers.Copilot.TokenManager do
     Map.get(token_response, key) || Map.get(token_response, Atom.to_string(key))
   end
 
-  defp token_valid_state?(%{access_token: access_token, expires_at: nil}) when is_binary(access_token),
-    do: true
+  defp token_valid_state?(%{access_token: access_token, expires_at: nil})
+       when is_binary(access_token),
+       do: true
 
   defp token_valid_state?(%{access_token: access_token, expires_at: %DateTime{} = expires_at})
        when is_binary(access_token) do
@@ -149,8 +174,25 @@ defmodule ElixirClaw.Providers.Copilot.TokenManager do
   end
 
   defp persist_state(state) do
-    OAuthTokenStore.persist("copilot", state)
+    if empty_state?(state) do
+      OAuthTokenStore.clear("copilot")
+    else
+      OAuthTokenStore.persist("copilot", state)
+    end
   end
+
+  defp resolved_token_value(token_value, _fallback) when is_binary(token_value) and token_value != "",
+    do: token_value
+
+  defp resolved_token_value(_token_value, fallback), do: fallback
+
+  defp empty_state?(%{access_token: access_token, refresh_token: refresh_token}) do
+    blank_token?(access_token) and blank_token?(refresh_token)
+  end
+
+  defp blank_token?(nil), do: true
+  defp blank_token?(""), do: true
+  defp blank_token?(_token), do: false
 
   defp normalize_state(state) do
     %{

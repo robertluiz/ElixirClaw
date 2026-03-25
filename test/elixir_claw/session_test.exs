@@ -97,7 +97,9 @@ defmodule ElixirClaw.SessionTest do
   describe "approve_tools/2" do
     test "persists explicit approvals in session metadata" do
       assert {:ok, session_id} =
-               Manager.start_session(base_attrs(channel_user_id: "approval-user", metadata: %{"locale" => "en"}))
+               Manager.start_session(
+                 base_attrs(channel_user_id: "approval-user", metadata: %{"locale" => "en"})
+               )
 
       assert :ok = Manager.approve_tools(session_id, ["privileged_tool", "bash"])
 
@@ -112,7 +114,9 @@ defmodule ElixirClaw.SessionTest do
   describe "set_task_agent/2 and clear_task_agent/1" do
     test "persists the active specialized task agent in session metadata" do
       assert {:ok, session_id} =
-               Manager.start_session(base_attrs(channel_user_id: "task-agent-user", metadata: %{"locale" => "en"}))
+               Manager.start_session(
+                 base_attrs(channel_user_id: "task-agent-user", metadata: %{"locale" => "en"})
+               )
 
       assert :ok = Manager.set_task_agent(session_id, "feature-builder")
 
@@ -128,13 +132,15 @@ defmodule ElixirClaw.SessionTest do
     end
 
     test "returns unknown_task_agent when the requested specialized agent is missing" do
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "missing-task-agent"))
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "missing-task-agent"))
 
       assert {:error, :unknown_task_agent} = Manager.set_task_agent(session_id, "does-not-exist")
     end
 
     test "creates a runtime task agent and stores it in session metadata" do
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "runtime-agent-user"))
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "runtime-agent-user"))
 
       assert {:ok, "triage-helper"} =
                Manager.create_task_agent(session_id, %{
@@ -241,5 +247,4 @@ defmodule ElixirClaw.SessionTest do
   catch
     :exit, _reason -> :ok
   end
-
 end

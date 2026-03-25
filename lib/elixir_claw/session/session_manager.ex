@@ -107,7 +107,8 @@ defmodule ElixirClaw.Session.Manager do
   end
 
   @spec put_metadata(String.t(), map()) :: :ok | {:error, :not_found}
-  def put_metadata(session_id, metadata_updates) when is_binary(session_id) and is_map(metadata_updates) do
+  def put_metadata(session_id, metadata_updates)
+      when is_binary(session_id) and is_map(metadata_updates) do
     case lookup_pid(session_id) do
       {:ok, pid} -> safe_call(fn -> Worker.put_metadata(pid, metadata_updates) end)
       :error -> {:error, :not_found}
@@ -116,7 +117,10 @@ defmodule ElixirClaw.Session.Manager do
 
   @spec effective_task_agent(Session.t()) :: {:ok, TaskAgent.t()} | {:error, :unknown_task_agent}
   def effective_task_agent(%Session{metadata: metadata}) when is_map(metadata) do
-    TaskAgent.fetch(Map.get(metadata, "active_task_agent", ""), Map.get(metadata, "runtime_task_agents", []))
+    TaskAgent.fetch(
+      Map.get(metadata, "active_task_agent", ""),
+      Map.get(metadata, "runtime_task_agents", [])
+    )
   end
 
   def effective_task_agent(_session), do: {:error, :unknown_task_agent}
@@ -140,9 +144,19 @@ defmodule ElixirClaw.Session.Manager do
       max_calls_per_minute: max_calls_per_minute(attrs)
     ]
 
-    with {:ok, _pid} = result <- DynamicSupervisor.start_child(ElixirClaw.SessionSupervisor, {Worker, worker_opts}) do
-      :ok = ElixirClaw.Agent.GraphMemory.seed_session_memory(persisted_session.id, persisted_session.metadata || %{})
-      _ = ElixirClaw.Agent.GraphMemory.refresh_session_summary(persisted_session.id, token_budget: 300)
+    with {:ok, _pid} = result <-
+           DynamicSupervisor.start_child(ElixirClaw.SessionSupervisor, {Worker, worker_opts}) do
+      :ok =
+        ElixirClaw.Agent.GraphMemory.seed_session_memory(
+          persisted_session.id,
+          persisted_session.metadata || %{}
+        )
+
+      _ =
+        ElixirClaw.Agent.GraphMemory.refresh_session_summary(persisted_session.id,
+          token_budget: 300
+        )
+
       result
     end
   end

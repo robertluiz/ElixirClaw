@@ -7,6 +7,7 @@ defmodule ElixirClaw.Channels.Telegram do
 
   require Logger
 
+  alias ElixirClaw.Agent.Loop, as: AgentLoopModule
   alias ElixirClaw.Bus.MessageBus
   alias ElixirClaw.Channel
   alias ElixirClaw.Session.Manager
@@ -17,7 +18,6 @@ defmodule ElixirClaw.Channels.Telegram do
   @telegram_limit 4096
   @token_pattern ~r/^\d+:[A-Za-z0-9_-]+$/
   @markers ["<|", "|>", "[INST]", "[/INST]", "<<SYS>>", "<</SYS>>"]
-  @default_provider "openai"
   @start_message "Welcome to ElixirClaw Telegram. Send a message to begin, or use /help."
   @help_message "Available commands: /start, /help, /new, /approve <tool...>"
   @new_session_message "Started a new session for this chat."
@@ -27,6 +27,10 @@ defmodule ElixirClaw.Channels.Telegram do
 
     @callback send_message(chat_id :: integer(), text :: String.t()) ::
                 {:ok, term()} | {:error, term()}
+
+    @callback get_updates(keyword()) :: {:ok, list(term())} | {:error, term()}
+    @callback delete_webhook(keyword()) :: {:ok, term()} | {:error, term()}
+    @callback get_me() :: {:ok, term()} | {:error, term()}
   end
 
   defmodule TelegexAPI do
@@ -35,14 +39,47 @@ defmodule ElixirClaw.Channels.Telegram do
 
     @impl true
     def send_message(chat_id, text), do: Telegex.send_message(chat_id, text)
+
+    @impl true
+    def get_updates(opts), do: Telegex.get_updates(opts)
+
+    @impl true
+    def delete_webhook(opts), do: Telegex.delete_webhook(opts)
+
+    @impl true
+    def get_me, do: Telegex.get_me()
+  end
+
+  defmodule AgentLoop do
+    @moduledoc false
+
+    @callback process_message(String.t(), String.t()) :: {:ok, term()} | {:error, term()}
+  end
+
+  defmodule DefaultAgentLoop do
+    @moduledoc false
+    @behaviour AgentLoop
+
+    @impl true
+    def process_message(session_id, content),
+      do: AgentLoopModule.process_message(session_id, content)
   end
 
   @type state :: %{
           telegex_api: module(),
+          agent_loop: module(),
           chat_sessions: %{optional(integer()) => String.t()},
           session_chats: %{optional(String.t()) => integer()},
           provider: String.t(),
-          model: String.t() | nil
+          model: String.t() | nil,
+          poll_inflight?: boolean(),
+          poll_interval: non_neg_integer(),
+          poll_limit: pos_integer(),
+          poll_offset: non_neg_integer(),
+          poll_timeout: non_neg_integer(),
+          poll_allowed_updates: [String.t()],
+          start_polling?: boolean(),
+          test_pid: pid() | nil
         }
 
   @impl Channel
@@ -94,14 +131,26 @@ defmodule ElixirClaw.Channels.Telegram do
 
   @impl true
   def init(config) do
-    {:ok,
-     %{
-       telegex_api: Keyword.get(config, :telegex_api, TelegexAPI),
-       chat_sessions: %{},
-       session_chats: %{},
-       provider: Keyword.get(config, :provider, @default_provider),
-       model: Keyword.get(config, :model)
-     }}
+    state = %{
+      telegex_api: Keyword.get(config, :telegex_api, TelegexAPI),
+      agent_loop: Keyword.get(config, :agent_loop, DefaultAgentLoop),
+      chat_sessions: %{},
+      session_chats: %{},
+      provider: Keyword.get(config, :provider, runtime_default_provider()),
+      model: Keyword.get(config, :model, runtime_default_model()),
+      poll_inflight?: false,
+      poll_interval: Keyword.get(config, :poll_interval, 35),
+      poll_limit: Keyword.get(config, :poll_limit, 100),
+      poll_offset: Keyword.get(config, :poll_offset, 0),
+      poll_timeout: Keyword.get(config, :poll_timeout, 20),
+      poll_allowed_updates: Keyword.get(config, :poll_allowed_updates, ["message"]),
+      start_polling?: Keyword.get(config, :start_polling, true),
+      test_pid: Keyword.get(config, :test_pid)
+    }
+
+    state = maybe_boot_polling(state)
+
+    {:ok, state}
   end
 
   @impl true
@@ -141,6 +190,26 @@ defmodule ElixirClaw.Channels.Telegram do
     {:noreply, state}
   end
 
+  def handle_info(:poll_updates, %{start_polling?: true, poll_inflight?: false} = state) do
+    {:noreply, start_poll_task(state)}
+  end
+
+  def handle_info(:poll_updates, state), do: {:noreply, state}
+
+  def handle_info({:telegram_polled, previous_offset, {:ok, updates}}, state) do
+    {next_offset, next_state} = process_polled_updates(List.wrap(updates), previous_offset, state)
+
+    schedule_poll(next_state.poll_interval)
+
+    {:noreply, %{next_state | poll_inflight?: false, poll_offset: next_offset}}
+  end
+
+  def handle_info({:telegram_polled, _previous_offset, {:error, reason}}, state) do
+    log_polling_result(reason)
+    schedule_poll(state.poll_interval)
+    {:noreply, %{state | poll_inflight?: false}}
+  end
+
   def handle_info(_message, state), do: {:noreply, state}
 
   defp process_update_call(update, state) do
@@ -170,12 +239,20 @@ defmodule ElixirClaw.Channels.Telegram do
             {{:ok, session_id}, next_state} ->
               case {tool_names, Manager.approve_tools(session_id, tool_names)} do
                 {[], _result} ->
-                  {send_direct_message(next_state, chat_id, "Usage: /approve <tool...>", session_id),
-                   next_state}
+                  {send_direct_message(
+                     next_state,
+                     chat_id,
+                     "Usage: /approve <tool...>",
+                     session_id
+                   ), next_state}
 
                 {_tools, :ok} ->
-                  {send_direct_message(next_state, chat_id, approval_message(tool_names), session_id),
-                   next_state}
+                  {send_direct_message(
+                     next_state,
+                     chat_id,
+                     approval_message(tool_names),
+                     session_id
+                   ), next_state}
 
                 {_tools, {:error, reason}} ->
                   {{:error, reason}, next_state}
@@ -193,11 +270,18 @@ defmodule ElixirClaw.Channels.Telegram do
                 session_id: session_id,
                 content: message.content,
                 channel: "telegram",
-                chat_id: chat_id
-              }
+                  chat_id: chat_id
+                }
 
-              {MessageBus.publish(topic(session_id), payload)
-               |> normalize_publish_result(session_id), next_state}
+              case MessageBus.publish(topic(session_id), payload)
+                   |> normalize_publish_result(session_id) do
+                {:ok, ^session_id} = result ->
+                  start_agent_loop_task(next_state, session_id, message.content)
+                  {result, next_state}
+
+                error ->
+                  {error, next_state}
+              end
 
             {error, next_state} ->
               {error, next_state}
@@ -210,6 +294,16 @@ defmodule ElixirClaw.Channels.Telegram do
 
   defp normalize_publish_result(:ok, session_id), do: {:ok, session_id}
   defp normalize_publish_result({:error, reason}, _session_id), do: {:error, reason}
+
+  defp maybe_boot_polling(%{start_polling?: true} = state) do
+    allow_test_mocks(state)
+    maybe_delete_webhook(state.telegex_api)
+    log_bot_ready(state.telegex_api)
+    schedule_poll(0)
+    state
+  end
+
+  defp maybe_boot_polling(state), do: state
 
   defp restart_session(chat_id, state) do
     state = maybe_end_existing_session(chat_id, state)
@@ -266,6 +360,94 @@ defmodule ElixirClaw.Channels.Telegram do
     end
   end
 
+  defp start_agent_loop_task(state, session_id, content) do
+    Task.start(fn ->
+      allow_test_mocks(state)
+
+      case state.agent_loop.process_message(session_id, content) do
+        {:ok, _response} ->
+          :ok
+
+        {:error, reason} ->
+          Logger.warning("Telegram agent loop failed: #{inspect(reason)}")
+      end
+    end)
+  end
+
+  defp start_poll_task(state) do
+    server = self()
+    updates_opts = [
+      offset: state.poll_offset,
+      limit: state.poll_limit,
+      timeout: state.poll_timeout,
+      allowed_updates: state.poll_allowed_updates
+    ]
+
+    Task.start(fn ->
+      allow_test_mocks(state)
+      send(server, {:telegram_polled, state.poll_offset, state.telegex_api.get_updates(updates_opts)})
+    end)
+
+    %{state | poll_inflight?: true}
+  end
+
+  defp process_polled_updates(updates, current_offset, state) do
+    Enum.reduce(updates, {current_offset, state}, fn update, {offset, acc_state} ->
+      next_offset = max(offset, update_id(update) + 1)
+
+      case process_update_call(update, acc_state) do
+        {{:error, reason}, next_state} ->
+          Logger.warning("Telegram update handling failed: #{inspect(reason)}")
+          {next_offset, next_state}
+
+        {_reply, next_state} ->
+          {next_offset, next_state}
+      end
+    end)
+  end
+
+  defp maybe_delete_webhook(api) do
+    case api.delete_webhook(drop_pending_updates: false) do
+      {:ok, _result} -> :ok
+      {:error, reason} -> Logger.warning("Telegram delete_webhook failed: #{inspect(reason)}")
+    end
+  end
+
+  defp log_bot_ready(api) do
+    case api.get_me() do
+      {:ok, %{username: username}} when is_binary(username) ->
+        Logger.info("Telegram bot @#{username} connected")
+
+      {:ok, %{"username" => username}} when is_binary(username) ->
+        Logger.info("Telegram bot @#{username} connected")
+
+      {:ok, _bot} ->
+        Logger.info("Telegram bot connected")
+
+      {:error, reason} ->
+        Logger.warning("Telegram get_me failed: #{inspect(reason)}")
+    end
+  end
+
+  defp allow_test_mocks(%{test_pid: test_pid} = state) when is_pid(test_pid) do
+    maybe_allow_mock(state.telegex_api, test_pid)
+    maybe_allow_mock(state.agent_loop, test_pid)
+  end
+
+  defp allow_test_mocks(_state), do: :ok
+
+  defp maybe_allow_mock(module, owner_pid) do
+    if Code.ensure_loaded?(Mox) and function_exported?(module, :__mock_for__, 0) do
+      apply(Mox, :allow, [module, owner_pid, self()])
+    end
+  end
+
+  defp schedule_poll(delay), do: Process.send_after(self(), :poll_updates, delay)
+
+  defp update_id(update) when is_map(update) do
+    Map.get(update, :update_id, Map.get(update, "update_id", 0)) || 0
+  end
+
   defp deliver_to_session(state, session_id, content) do
     case Map.get(state.session_chats, session_id) do
       nil -> {:error, :unknown_session}
@@ -319,6 +501,14 @@ defmodule ElixirClaw.Channels.Telegram do
   defp merged_config(config) do
     config()
     |> Keyword.merge(normalize_config(config))
+  end
+
+  defp runtime_default_provider do
+    Application.get_env(:elixir_claw, :default_provider, "openai")
+  end
+
+  defp runtime_default_model do
+    Application.get_env(:elixir_claw, :default_model)
   end
 
   defp config do
@@ -399,6 +589,14 @@ defmodule ElixirClaw.Channels.Telegram do
       preview = content |> String.slice(0, 50) |> Kernel.||("")
       "Telegram chat #{chat_id} incoming: #{preview}"
     end)
+  end
+
+  defp log_polling_result(%Telegex.RequestError{reason: :timeout}) do
+    Logger.debug("Telegram long polling timed out; restarting poll loop")
+  end
+
+  defp log_polling_result(reason) do
+    Logger.warning("Telegram polling failed: #{inspect(reason)}")
   end
 
   defp topic(session_id), do: "session:#{session_id}"

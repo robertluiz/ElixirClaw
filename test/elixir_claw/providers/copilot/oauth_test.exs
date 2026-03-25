@@ -8,6 +8,7 @@ defmodule ElixirClaw.Providers.Copilot.OAuthTest do
   setup do
     bypass = Bypass.open()
     previous_config = Application.get_env(:elixir_claw, OAuth)
+    previous_client_id = System.get_env("COPILOT_CLIENT_ID")
 
     Application.put_env(:elixir_claw, OAuth,
       client_id: "copilot-client",
@@ -20,6 +21,12 @@ defmodule ElixirClaw.Providers.Copilot.OAuthTest do
         Application.put_env(:elixir_claw, OAuth, previous_config)
       else
         Application.delete_env(:elixir_claw, OAuth)
+      end
+
+      if is_nil(previous_client_id) do
+        System.delete_env("COPILOT_CLIENT_ID")
+      else
+        System.put_env("COPILOT_CLIENT_ID", previous_client_id)
       end
     end)
 
@@ -36,7 +43,9 @@ defmodule ElixirClaw.Providers.Copilot.OAuthTest do
 
       assert params["client_id"] == client_id
       assert params["scope"] == "read:user"
-      assert ["application/x-www-form-urlencoded"] = Plug.Conn.get_req_header(conn, "content-type")
+
+      assert ["application/x-www-form-urlencoded"] =
+               Plug.Conn.get_req_header(conn, "content-type")
 
       Plug.Conn.resp(
         conn,
@@ -95,7 +104,7 @@ defmodule ElixirClaw.Providers.Copilot.OAuthTest do
               scope: "read:user",
               expires_in: 28800,
               refresh_token_expires_in: 15_897_600
-             }} = OAuth.poll_device_token("device-code-1", client_id: client_id)
+            }} = OAuth.poll_device_token("device-code-1", client_id: client_id)
   end
 
   test "poll_device_token/2 keeps polling until authorization completes", %{client_id: client_id} do
@@ -195,5 +204,79 @@ defmodule ElixirClaw.Providers.Copilot.OAuthTest do
 
     refute log =~ access_token
     refute log =~ refresh_token
+  end
+
+  test "device_code/1 falls back to the default Copilot client id when app config is missing", %{
+    bypass: bypass
+  } do
+    Application.delete_env(:elixir_claw, OAuth)
+    System.delete_env("COPILOT_CLIENT_ID")
+
+    Bypass.expect_once(bypass, "POST", "/login/device/code", fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      params = URI.decode_query(body)
+
+      assert params["client_id"] == "Iv1.b507a08c87ecfe98"
+
+      Plug.Conn.resp(
+        conn,
+        200,
+        Jason.encode!(%{
+          "device_code" => "device-code-env",
+          "user_code" => "WXYZ-1234",
+          "verification_uri" => "https://github.com/login/device",
+          "expires_in" => 900,
+          "interval" => 5
+        })
+      )
+    end)
+
+    assert {:ok,
+            %{
+              device_code: "device-code-env",
+              user_code: "WXYZ-1234",
+              verification_uri: "https://github.com/login/device",
+              expires_in: 900,
+              interval: 5
+            }} =
+             OAuth.device_code(
+               device_code_url: "http://localhost:#{bypass.port}/login/device/code"
+             )
+  end
+
+  test "device_code/1 prefers COPILOT_CLIENT_ID override over the default", %{bypass: bypass} do
+    Application.delete_env(:elixir_claw, OAuth)
+    System.put_env("COPILOT_CLIENT_ID", "copilot-env-client")
+
+    Bypass.expect_once(bypass, "POST", "/login/device/code", fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      params = URI.decode_query(body)
+
+      assert params["client_id"] == "copilot-env-client"
+
+      Plug.Conn.resp(
+        conn,
+        200,
+        Jason.encode!(%{
+          "device_code" => "device-code-env-override",
+          "user_code" => "QRST-5678",
+          "verification_uri" => "https://github.com/login/device",
+          "expires_in" => 900,
+          "interval" => 5
+        })
+      )
+    end)
+
+    assert {:ok,
+            %{
+              device_code: "device-code-env-override",
+              user_code: "QRST-5678",
+              verification_uri: "https://github.com/login/device",
+              expires_in: 900,
+              interval: 5
+            }} =
+             OAuth.device_code(
+               device_code_url: "http://localhost:#{bypass.port}/login/device/code"
+             )
   end
 end

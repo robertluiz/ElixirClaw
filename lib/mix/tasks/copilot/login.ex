@@ -13,7 +13,7 @@ defmodule Mix.Tasks.Copilot.Login do
 
     device_code_request = oauth_override(:device_code_request, &OAuth.device_code/1)
     device_token_poll = oauth_override(:device_token_poll, &OAuth.poll_device_token/2)
-    token_store = oauth_override(:token_store, &TokenManager.store_token/1)
+    token_store = oauth_override(:token_store, &TokenManager.persist_token_response/1)
     oauth_opts = Application.get_env(:elixir_claw, OAuth, [])
 
     with {:ok, device_code} <- device_code_request.(oauth_opts),

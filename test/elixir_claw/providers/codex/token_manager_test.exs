@@ -8,7 +8,12 @@ defmodule ElixirClaw.Providers.Codex.TokenManagerTest do
     bypass = Bypass.open()
     previous_config = Application.get_env(:elixir_claw, OAuth)
     previous_store_config = Application.get_env(:elixir_claw, OAuthTokenStore)
-    storage_path = Path.join(System.tmp_dir!(), "codex-token-manager-#{System.unique_integer([:positive])}.json")
+
+    storage_path =
+      Path.join(
+        System.tmp_dir!(),
+        "codex-token-manager-#{System.unique_integer([:positive])}.json"
+      )
 
     Application.put_env(:elixir_claw, OAuth,
       client_id: "codex-client",
@@ -110,19 +115,28 @@ defmodule ElixirClaw.Providers.Codex.TokenManagerTest do
   end
 
   test "loads persisted tokens after the process restarts", %{storage_path: storage_path} do
+    manager_name = isolated_manager_name("codex")
+
+    assert {:ok, pid} = TokenManager.start_link(name: manager_name)
+
     assert :ok =
-             TokenManager.store_token(%{
-               access_token: "persisted-access-token",
-               refresh_token: "persisted-refresh-token",
-               expires_in: 3600
+             GenServer.call(manager_name, {
+               :store_token,
+               %{
+                 access_token: "persisted-access-token",
+                 refresh_token: "persisted-refresh-token",
+                 expires_in: 3600
+               }
              })
 
-    pid = Process.whereis(TokenManager)
-    assert is_pid(pid)
     GenServer.stop(pid)
-    Process.sleep(50)
+    assert {:ok, _pid} = TokenManager.start_link(name: manager_name)
 
-    assert {:ok, "persisted-access-token"} = TokenManager.get_token()
+    assert {:ok, "persisted-access-token"} = GenServer.call(manager_name, :get_token)
     assert File.exists?(storage_path)
+  end
+
+  defp isolated_manager_name(prefix) do
+    {:global, {__MODULE__, prefix, System.unique_integer([:positive])}}
   end
 end

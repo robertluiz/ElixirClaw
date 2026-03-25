@@ -17,7 +17,7 @@ defmodule ElixirClaw.Config.StartupManager do
   }
 
   @provider_allowed_keys MapSet.new(["enabled", "api_key", "model", "base_url", "name"])
-  @channel_allowed_keys MapSet.new(["enabled", "bot_token", "type"])
+  @channel_allowed_keys MapSet.new(["enabled", "bot_token", "type", "allowed_chat_ids"])
 
   @spec enabled_channels(map()) :: [{String.t(), map()}]
   def enabled_channels(config_map) when is_map(config_map) do

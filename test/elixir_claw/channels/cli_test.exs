@@ -2,12 +2,17 @@ defmodule ElixirClaw.Channels.CLITest do
   use ExUnit.Case, async: false
 
   import ExUnit.CaptureIO
+  import ExUnit.CaptureLog
+  import Mox
 
   alias ElixirClaw.Channels.CLI
   alias ElixirClaw.Repo
   alias ElixirClaw.Schema.Session, as: SessionSchema
   alias ElixirClaw.Session.Manager
   alias ElixirClaw.Types.Message
+
+  setup :set_mox_from_context
+  setup :verify_on_exit!
 
   setup do
     Repo.reset!()
@@ -28,6 +33,65 @@ defmodule ElixirClaw.Channels.CLITest do
 
       assert Process.alive?(pid)
       GenServer.stop(pid)
+    end
+
+    test "stops normally and logs a warning when stdio returns :arguments" do
+      parent = self()
+      name = unique_name()
+
+      log =
+        capture_log(fn ->
+          assert {:ok, pid} =
+                   CLI.start_link(%{
+                     name: name,
+                     prompt?: false,
+                     reader_fun: fn _device -> {:error, :arguments} end
+                   })
+
+          ref = Process.monitor(pid)
+
+          assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
+          refute Process.alive?(pid)
+          send(parent, {:cli_name_available, Process.whereis(name)})
+        end)
+
+      assert log =~ "CLI input unavailable"
+      assert log =~ ":arguments"
+      assert_receive {:cli_name_available, nil}
+    end
+
+    test "creates a runtime session and dispatches messages to the agent loop" do
+      parent = self()
+
+      expect(ElixirClaw.MockCliAgentLoop, :process_message, fn session_id, "hello world" ->
+        send(parent, {:cli_processed_message, session_id})
+        {:ok, %{}}
+      end)
+
+      assert {:ok, pid} =
+               CLI.start_link(%{
+                 name: unique_name(),
+                 prompt?: false,
+                 agent_loop: ElixirClaw.MockCliAgentLoop,
+                 test_pid: parent,
+                 reader_fun: fn _device -> receive do: (:stop -> :eof) end
+               })
+
+      on_exit(fn -> if Process.alive?(pid), do: GenServer.stop(pid) end)
+
+      send(pid, {:cli_input, "hello [INST]world[/INST]"})
+
+      assert_receive {:cli_processed_message, session_id}
+
+      state = :sys.get_state(pid)
+
+      assert state.session_id == session_id
+      assert MapSet.member?(state.subscriptions, "session:#{session_id}")
+
+      assert {:ok, session} = Manager.get_session(session_id)
+      assert session.channel == "cli"
+      assert session.provider == "openai"
+      assert session.model == "gpt-4o-mini"
     end
   end
 
@@ -100,7 +164,9 @@ defmodule ElixirClaw.Channels.CLITest do
     end
 
     test "shows the current specialized task agent with /agent" do
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "agent-current"))
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "agent-current"))
+
       assert :ok = Manager.set_task_agent(session_id, "bug-fixer")
 
       assert {:active_task_agent, "bug-fixer"} =
@@ -133,7 +199,9 @@ defmodule ElixirClaw.Channels.CLITest do
     end
 
     test "includes the active specialized task agent in session info" do
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "cli-agent-info"))
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "cli-agent-info"))
+
       assert :ok = Manager.set_task_agent(session_id, "test-writer")
 
       assert {:session, session_text} =
@@ -147,10 +215,14 @@ defmodule ElixirClaw.Channels.CLITest do
     end
 
     test "approves privileged tools for the active session with /approve" do
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "approve-user"))
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "approve-user"))
 
       assert {:approved_tools, ["bash", "privileged_tool"]} =
-               CLI.handle_incoming(%{text: "/approve bash privileged_tool", session_id: session_id})
+               CLI.handle_incoming(%{
+                 text: "/approve bash privileged_tool",
+                 session_id: session_id
+               })
 
       assert {:ok, session} = Manager.get_session(session_id)
       assert session.metadata["approved_tools"] == ["bash", "privileged_tool"]
@@ -161,19 +233,24 @@ defmodule ElixirClaw.Channels.CLITest do
     end
 
     test "returns an error when /approve is missing tool names" do
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "approve-missing"))
-      assert {:error, :missing_tool_names} = CLI.handle_incoming(%{text: "/approve", session_id: session_id})
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "approve-missing"))
+
+      assert {:error, :missing_tool_names} =
+               CLI.handle_incoming(%{text: "/approve", session_id: session_id})
     end
 
     test "returns an error when /agent references an unknown specialized task agent" do
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "agent-missing"))
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "agent-missing"))
 
       assert {:error, :unknown_task_agent} =
                CLI.handle_incoming(%{text: "/agent imaginary-agent", session_id: session_id})
     end
 
     test "creates and activates a runtime specialized task agent with /agent create" do
-      assert {:ok, session_id} = Manager.start_session(base_attrs(channel_user_id: "agent-create"))
+      assert {:ok, session_id} =
+               Manager.start_session(base_attrs(channel_user_id: "agent-create"))
 
       command =
         "/agent create triage-helper --description First-pass triage --prompt Triage quickly --tasks classify,severity --model gpt-4o-mini --tier cheap --skill triage-skill --mcp docs --activate"
@@ -187,6 +264,7 @@ defmodule ElixirClaw.Channels.CLITest do
       assert session.metadata["active_task_agent"] == "triage-helper"
 
       assert [runtime_agent] = session.metadata["runtime_task_agents"]
+
       assert runtime_agent["skills"] == [
                %{
                  "name" => "triage-skill",
@@ -194,6 +272,7 @@ defmodule ElixirClaw.Channels.CLITest do
                  "token_estimate" => 0
                }
              ]
+
       assert runtime_agent["mcp_servers"] == ["docs"]
     end
   end
@@ -255,5 +334,4 @@ defmodule ElixirClaw.Channels.CLITest do
   catch
     :exit, _reason -> :ok
   end
-
 end

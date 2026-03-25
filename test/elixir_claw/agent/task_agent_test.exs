@@ -40,7 +40,11 @@ defmodule ElixirClaw.Agent.TaskAgentTest do
         }
       ])
 
-      assert {:ok, %TaskAgent{name: "release-manager", tasks: ["Confirm changelog", "Verify release checklist"]}} =
+      assert {:ok,
+              %TaskAgent{
+                name: "release-manager",
+                tasks: ["Confirm changelog", "Verify release checklist"]
+              }} =
                TaskAgent.fetch("release-manager")
     end
 

@@ -36,19 +36,19 @@ defmodule ElixirClaw.ApplicationTest do
           spec |> Supervisor.child_spec([]) |> Map.fetch!(:start) |> elem(0)
         end)
 
-       assert modules == [
-                ElixirClaw.Repo,
-                Registry,
-                DynamicSupervisor,
-                Phoenix.PubSub.Supervisor,
-                Task.Supervisor,
-                ElixirClaw.Tools.Registry,
-                ElixirClaw.Agent.MemoryGraphIndexer,
-                ElixirClaw.Providers.Codex.TokenManager,
-                ElixirClaw.Providers.Copilot.TokenManager,
-                MCPSupervisor,
-                ChannelsSupervisor
-              ]
+      assert modules == [
+               ElixirClaw.Repo,
+               Registry,
+               DynamicSupervisor,
+               Phoenix.PubSub.Supervisor,
+               Task.Supervisor,
+               ElixirClaw.Tools.Registry,
+               ElixirClaw.Agent.MemoryGraphIndexer,
+               ElixirClaw.Providers.Codex.TokenManager,
+               ElixirClaw.Providers.Copilot.TokenManager,
+               MCPSupervisor,
+               ChannelsSupervisor
+             ]
     end
   end
 
@@ -87,6 +87,35 @@ defmodule ElixirClaw.ApplicationTest do
         end)
 
       assert log =~ "Skipping Telegram channel startup"
+    end
+
+    test "does not restart the CLI child when stdin fails with :arguments" do
+      cli_name = :application_test_cli_arguments
+      supervisor_name = Module.concat(__MODULE__, "ChannelsSupervisor#{System.unique_integer([:positive])}")
+
+      Application.put_env(:elixir_claw, :channels, %{
+        cli: %{name: cli_name, prompt?: false, reader_fun: fn _ -> {:error, :arguments} end}
+      })
+
+      Application.put_env(:elixir_claw, :cli_enabled, true)
+      Application.put_env(:elixir_claw, :telegram_enabled, false)
+      Application.put_env(:elixir_claw, :discord_enabled, false)
+
+      log =
+        capture_log(fn ->
+          assert {:ok, supervisor_pid} = start_supervised({ChannelsSupervisor, name: supervisor_name})
+
+          Process.sleep(50)
+
+          assert Process.alive?(supervisor_pid)
+          assert Process.whereis(cli_name) == nil
+
+          assert [{ElixirClaw.Channels.CLI, :undefined, :worker, [ElixirClaw.Channels.CLI]}] =
+                   Supervisor.which_children(supervisor_pid)
+        end)
+
+      assert log =~ "CLI input unavailable"
+      assert log =~ ":arguments"
     end
   end
 

@@ -21,6 +21,55 @@ defmodule ElixirClaw.ConfigTest do
     assert [%{"type" => "cli"}] = config.channels
   end
 
+  test "load_from_string parses channel tables with enabled telegram config" do
+    toml = """
+    [database]
+    database_path = "test.db"
+
+    [providers.openai]
+    api_key = "${OPENAI_API_KEY}"
+    model = "gpt-4o-mini"
+
+    [channels.telegram]
+    enabled = true
+    bot_token = "${TELEGRAM_BOT_TOKEN}"
+
+    [channels.cli]
+    enabled = true
+    """
+
+    System.put_env("OPENAI_API_KEY", "sk-inline-test-key")
+    System.put_env("TELEGRAM_BOT_TOKEN", "123456:test_bot_token")
+
+    on_exit(fn ->
+      System.delete_env("OPENAI_API_KEY")
+      System.delete_env("TELEGRAM_BOT_TOKEN")
+    end)
+
+    assert {:ok, %Config{} = config} = Loader.load_from_string(toml)
+
+    assert Enum.any?(config.channels, &(&1["type"] == "telegram" and &1["enabled"] == true))
+    assert Enum.any?(config.channels, &(&1["type"] == "cli" and &1["enabled"] == true))
+  end
+
+  test "oauth providers can declare model as a list in table syntax" do
+    toml = """
+    [database]
+    database_path = "test.db"
+
+    [providers.github_copilot]
+    model = ["gpt-5.4-mini", "gpt-5.4"]
+
+    [channels.cli]
+    enabled = true
+    """
+
+    assert {:ok, %Config{} = config} = Loader.load_from_string(toml)
+
+    assert [%{name: "github_copilot", model: ["gpt-5.4-mini", "gpt-5.4"], api_key: nil}] =
+             config.providers
+  end
+
   test "load missing required fields returns {:error, reasons}" do
     path = Path.join(@fixtures_dir, "invalid_config.toml")
 
@@ -233,7 +282,10 @@ defmodule ElixirClaw.ConfigTest do
 
     assert Enum.any?(
              reasons,
-             &String.contains?(&1, "task_agent release-manager system_prompt must be a non-empty string")
+             &String.contains?(
+               &1,
+               "task_agent release-manager system_prompt must be a non-empty string"
+             )
            )
   end
 end

@@ -26,10 +26,15 @@ defmodule ElixirClaw.Agent.ContextBuilder do
   def build_context(session_or_messages, skills, opts \\ [])
       when is_list(skills) and is_list(opts) do
     system_prompt = Keyword.get(opts, :system_prompt)
-    user_message = Keyword.get(opts, :user_message, "") |> sanitize_user_content() |> wrap_user_input()
+
+    user_message =
+      Keyword.get(opts, :user_message, "") |> sanitize_user_content() |> wrap_user_input()
+
     max_tokens = Keyword.get(opts, :max_tokens, @default_max_tokens)
     skill_token_budget = Keyword.get(opts, :skill_token_budget, @default_skill_token_budget)
-    task_agent_token_budget = Keyword.get(opts, :task_agent_token_budget, @default_task_agent_token_budget)
+
+    task_agent_token_budget =
+      Keyword.get(opts, :task_agent_token_budget, @default_task_agent_token_budget)
 
     system_messages =
       build_system_messages(
@@ -39,6 +44,7 @@ defmodule ElixirClaw.Agent.ContextBuilder do
         skill_token_budget,
         task_agent_token_budget
       )
+
     user_messages = maybe_user_message(user_message)
 
     reserved_tokens = count_context_tokens(system_messages ++ user_messages)
@@ -89,7 +95,8 @@ defmodule ElixirClaw.Agent.ContextBuilder do
   def wrap_tool_output(content), do: wrap_untrusted_content("untrusted_tool_output", content)
 
   @spec wrap_memory_summary(String.t() | any()) :: String.t()
-  def wrap_memory_summary(content), do: wrap_untrusted_content("untrusted_memory_summary", content)
+  def wrap_memory_summary(content),
+    do: wrap_untrusted_content("untrusted_memory_summary", content)
 
   defp build_system_messages(
          session_or_messages,
@@ -144,7 +151,8 @@ defmodule ElixirClaw.Agent.ContextBuilder do
          {:ok, task_agent} <- TaskAgent.fetch(task_agent_name, runtime_agents),
          skills when is_list(skills) and skills != [] <- Map.get(task_agent, :skills, []),
          normalized_skills <- normalize_task_agent_skills(skills),
-         {composed, _metadata} <- ElixirClaw.Skills.Composer.compose(normalized_skills, task_agent_token_budget),
+         {composed, _metadata} <-
+           ElixirClaw.Skills.Composer.compose(normalized_skills, task_agent_token_budget),
          true <- composed != "" do
       build_message("system", composed)
     else

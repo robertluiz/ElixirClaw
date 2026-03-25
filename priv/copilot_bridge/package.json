@@ -1,0 +1,9 @@
+{
+  "name": "elixir-claw-copilot-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@github/copilot-sdk": "0.2.0"
+  }
+}

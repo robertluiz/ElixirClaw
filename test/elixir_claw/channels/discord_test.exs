@@ -232,12 +232,14 @@ defmodule ElixirClaw.Channels.DiscordTest do
         {:ok, %{}}
       end)
 
-      expect(ElixirClaw.MockDiscordSessionManager, :approve_tools, fn "session-1", ["bash", "mock_tool"] ->
+      expect(ElixirClaw.MockDiscordSessionManager, :approve_tools, fn "session-1",
+                                                                      ["bash", "mock_tool"] ->
         send(parent, :approved_tools)
         :ok
       end)
 
-      expect(ElixirClaw.MockDiscordAPI, :create_message, fn 222, "Approved tools: bash, mock_tool" ->
+      expect(ElixirClaw.MockDiscordAPI, :create_message, fn 222,
+                                                            "Approved tools: bash, mock_tool" ->
         {:ok, %{id: 3}}
       end)
 

@@ -1,0 +1,1 @@
+{"action":"chat","githubToken":"test-token","model":"gpt-4o-mini","messages":[{"role":"user","content":"hello"}],"tools":[],"provider":"github_copilot"}

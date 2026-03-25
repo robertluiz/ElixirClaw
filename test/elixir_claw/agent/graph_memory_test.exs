@@ -133,15 +133,37 @@ defmodule ElixirClaw.Agent.GraphMemoryTest do
       session = Factory.insert_session!(channel_user_id: "summary-user")
 
       for attrs <- [
-            %{node_type: "style", scope: "global", name: "response-style", content: "Use concise and direct answers."},
-            %{node_type: "personality", scope: "global", name: "personality", content: "Act like a decisive senior engineer."},
-            %{node_type: "preference", scope: "user", name: "language", content: "The user prefers pt-BR."},
-            %{node_type: "day_summary", scope: "day", name: "daily-summary", content: "Today focused on dynamic orchestrator agents and memory design."}
+            %{
+              node_type: "style",
+              scope: "global",
+              name: "response-style",
+              content: "Use concise and direct answers."
+            },
+            %{
+              node_type: "personality",
+              scope: "global",
+              name: "personality",
+              content: "Act like a decisive senior engineer."
+            },
+            %{
+              node_type: "preference",
+              scope: "user",
+              name: "language",
+              content: "The user prefers pt-BR."
+            },
+            %{
+              node_type: "day_summary",
+              scope: "day",
+              name: "daily-summary",
+              content: "Today focused on dynamic orchestrator agents and memory design."
+            }
           ] do
         {:ok, _node} = GraphMemory.upsert_memory_node(Map.put(attrs, :session_id, session.id))
       end
 
-      assert {:ok, summary} = GraphMemory.orchestrator_memory_summary(session.id, token_budget: 200)
+      assert {:ok, summary} =
+               GraphMemory.orchestrator_memory_summary(session.id, token_budget: 200)
+
       assert summary =~ "Use concise and direct answers."
       assert summary =~ "Act like a decisive senior engineer."
       assert summary =~ "The user prefers pt-BR."
