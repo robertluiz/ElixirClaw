@@ -45,6 +45,21 @@ function promptFromMessages(messages) {
     .join('\n\n');
 }
 
+function normalizeAttachment(attachment) {
+  if (!attachment || typeof attachment !== 'object') return null;
+
+  if (attachment.type === 'blob' && typeof attachment.data === 'string' && typeof attachment.mimeType === 'string') {
+    return {
+      type: 'blob',
+      data: attachment.data,
+      mimeType: attachment.mimeType,
+      displayName: typeof attachment.displayName === 'string' ? attachment.displayName : undefined
+    };
+  }
+
+  return null;
+}
+
 async function withClient(githubToken, fn) {
   const client = new CopilotClient({
     githubToken: githubToken || undefined,
@@ -71,7 +86,10 @@ async function handleChat(request) {
   }
 
   const messages = Array.isArray(request.messages) ? request.messages : [];
-  const prompt = promptFromMessages(messages);
+  const prompt = typeof request.prompt === 'string' ? request.prompt : promptFromMessages(messages);
+  const attachments = Array.isArray(request.attachments)
+    ? request.attachments.map(normalizeAttachment).filter(Boolean)
+    : [];
 
   if (!prompt.trim()) {
     return { ok: false, error: 'missing_prompt' };
@@ -84,15 +102,21 @@ async function handleChat(request) {
   return withClient(request.githubToken, async (client) => {
     const session = await client.createSession({
       model,
+      reasoningEffort: typeof request.reasoningEffort === 'string' && request.reasoningEffort.trim() !== ''
+        ? request.reasoningEffort
+        : undefined,
       onPermissionRequest: approveAll,
       systemMessage: {
         mode: 'replace',
-        content: systemPromptFromMessages(messages) || 'You are GitHub Copilot.'
+        content: (typeof request.systemPrompt === 'string' ? request.systemPrompt : systemPromptFromMessages(messages)) || 'You are GitHub Copilot.'
       }
     });
 
     try {
-      const event = await session.sendAndWait({ prompt }, 120000);
+      const event = await session.sendAndWait({
+        prompt,
+        attachments: attachments.length > 0 ? attachments : undefined
+      }, 120000);
 
       return {
         ok: true,

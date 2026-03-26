@@ -19,6 +19,23 @@ defmodule ElixirClaw.Channels.CLITest do
     Repo.delete_all(ElixirClaw.Schema.Message)
     Repo.delete_all(SessionSchema)
     kill_session_processes()
+
+    previous_default_provider = Application.get_env(:elixir_claw, :default_provider)
+    previous_default_model = Application.get_env(:elixir_claw, :default_model)
+
+    Application.put_env(:elixir_claw, :default_provider, "openai")
+    Application.put_env(:elixir_claw, :default_model, "gpt-4o-mini")
+
+    on_exit(fn ->
+      if is_nil(previous_default_provider),
+        do: Application.delete_env(:elixir_claw, :default_provider),
+        else: Application.put_env(:elixir_claw, :default_provider, previous_default_provider)
+
+      if is_nil(previous_default_model),
+        do: Application.delete_env(:elixir_claw, :default_model),
+        else: Application.put_env(:elixir_claw, :default_model, previous_default_model)
+    end)
+
     :ok
   end
 

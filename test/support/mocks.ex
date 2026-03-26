@@ -2,6 +2,7 @@ Mox.defmock(ElixirClaw.MockProvider, for: ElixirClaw.Provider)
 Mox.defmock(ElixirClaw.MockChannel, for: ElixirClaw.Channel)
 Mox.defmock(ElixirClaw.MockTool, for: ElixirClaw.Tool)
 Mox.defmock(ElixirClaw.MockTelegex, for: ElixirClaw.Channels.Telegram.API)
+Mox.defmock(ElixirClaw.MockAudioTranscriber, for: ElixirClaw.Media.AudioTranscriber)
 
 if Code.ensure_loaded?(ElixirClaw.Channels.Discord.API) do
   Mox.defmock(ElixirClaw.MockDiscordAPI, for: ElixirClaw.Channels.Discord.API)

@@ -10,6 +10,7 @@ defmodule ElixirClaw.Providers.Anthropic do
   @default_base_url "https://api.anthropic.com/v1"
   @default_version "2023-06-01"
   @default_models ["claude-3-5-sonnet"]
+  @default_max_tokens 4096
 
   @impl true
   def name, do: "anthropic"
@@ -85,6 +86,8 @@ defmodule ElixirClaw.Providers.Anthropic do
     }
     |> maybe_put("system", system)
     |> maybe_put("tools", Keyword.get(opts, :tools))
+    |> maybe_put("thinking", Keyword.get(opts, :thinking))
+    |> Map.put("max_tokens", Keyword.get(opts, :max_tokens, @default_max_tokens))
   end
 
   defp format_messages(messages) do

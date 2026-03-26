@@ -28,6 +28,12 @@ model = "gpt-4o-mini"
 enabled = false
 bot_token = "YOUR_KEY_HERE"
 allowed_chat_ids = []
+webhook_enabled = false
+webhook_url = "https://example.com/telegram/webhook"
+webhook_secret_token = "YOUR_KEY_HERE"
+webhook_port = 4001
+webhook_max_connections = 40
+webhook_drop_pending_updates = false
 
 # --- Discord Channel ---
 [channels.discord]

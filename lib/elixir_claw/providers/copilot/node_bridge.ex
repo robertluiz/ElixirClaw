@@ -19,7 +19,14 @@ defmodule ElixirClaw.Providers.Copilot.NodeBridge do
   def stream(messages, opts) when is_list(messages) and is_list(opts) do
     with {:ok, %ProviderResponse{} = response} <- request("chat", messages, opts) do
       {:ok,
-       [%{delta: response.content || "", finish_reason: response.finish_reason, tool_calls: response.tool_calls || [], token_usage: response.token_usage}]
+       [
+         %{
+           delta: response.content || "",
+           finish_reason: response.finish_reason,
+           tool_calls: response.tool_calls || [],
+           token_usage: response.token_usage
+         }
+       ]
        |> Stream.map(& &1)}
     end
   end
@@ -49,19 +56,28 @@ defmodule ElixirClaw.Providers.Copilot.NodeBridge do
   end
 
   defp do_request(action, messages, opts, config, runner, github_token) do
-    payload = %{
-      "action" => action,
-      "githubToken" => github_token,
-      "model" => Keyword.get(opts, :model),
-      "messages" => messages,
-      "provider" => "github_copilot"
-    }
+    payload =
+      %{
+        "action" => action,
+        "githubToken" => github_token,
+        "model" => Keyword.get(opts, :model),
+        "reasoningEffort" => Keyword.get(opts, :reasoning_effort),
+        "messages" => messages,
+        "provider" => "github_copilot"
+      }
+      |> Map.merge(serialized_message_payload(messages))
 
     command = bridge_command(config)
 
-    with {:ok, raw_output} <- runner.(%{command: command, input: Jason.encode!(payload), env: bridge_env(config), cwd: bridge_cwd()}),
+    with {:ok, raw_output} <-
+           runner.(%{
+             command: command,
+             input: Jason.encode!(payload),
+             env: bridge_env(config),
+             cwd: bridge_cwd()
+           }),
          {:ok, decoded} <- decode_bridge_output(raw_output),
-          {:ok, response} <- normalize_bridge_response(decoded, Keyword.get(opts, :model)) do
+         {:ok, response} <- normalize_bridge_response(decoded, Keyword.get(opts, :model)) do
       {:ok, response}
     else
       {:error, raw_output} when is_binary(raw_output) ->
@@ -96,21 +112,143 @@ defmodule ElixirClaw.Providers.Copilot.NodeBridge do
      }}
   end
 
-  defp normalize_bridge_response(%{"ok" => false, "error" => reason}, _requested_model), do: {:error, normalize_error(reason)}
+  defp normalize_bridge_response(%{"ok" => false, "error" => reason}, _requested_model),
+    do: {:error, normalize_error(reason)}
+
   defp normalize_bridge_response(_decoded, _requested_model), do: {:error, :invalid_response}
 
   defp normalize_error(reason) when is_binary(reason) do
     case reason do
-      "no_token" -> :no_token
-      "unauthorized" -> :unauthorized
-      "request_failed" -> :request_failed
+      "no_token" ->
+        :no_token
+
+      "unauthorized" ->
+        :unauthorized
+
+      "request_failed" ->
+        :request_failed
+
       "Execution failed: Error: Session was not created with authentication info or custom provider" ->
         :no_token
-      other -> other
+
+      other ->
+        other
     end
   end
 
   defp normalize_error(reason), do: reason
+
+  defp serialized_message_payload(messages) do
+    %{}
+    |> maybe_put("systemPrompt", system_prompt_from_messages(messages))
+    |> maybe_put("prompt", prompt_from_messages(messages))
+    |> maybe_put("attachments", attachments_from_messages(messages))
+  end
+
+  defp system_prompt_from_messages(messages) do
+    messages
+    |> Enum.filter(&(message_role(&1) == "system"))
+    |> Enum.map(&(message_content(&1) |> serialize_content_for_prompt()))
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join("\n\n")
+    |> empty_to_nil()
+  end
+
+  defp prompt_from_messages(messages) do
+    messages
+    |> Enum.filter(&(message_role(&1) != "system"))
+    |> Enum.map(fn message ->
+      role = message_role(message) || "user"
+      content = message_content(message) |> serialize_content_for_prompt()
+      "#{role}: #{content}"
+    end)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join("\n\n")
+    |> empty_to_nil()
+  end
+
+  defp attachments_from_messages(messages) do
+    messages
+    |> Enum.filter(&(message_role(&1) == "user"))
+    |> Enum.flat_map(&(message_content(&1) |> attachments_from_content()))
+    |> case do
+      [] -> nil
+      attachments -> attachments
+    end
+  end
+
+  defp serialize_content_for_prompt(content) when is_binary(content), do: content
+
+  defp serialize_content_for_prompt(content) when is_list(content) do
+    content
+    |> Enum.map(&prompt_part_text/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join("\n")
+  end
+
+  defp serialize_content_for_prompt(_content), do: ""
+
+  defp prompt_part_text(%{"type" => "text", "text" => text}) when is_binary(text), do: text
+  defp prompt_part_text(%{type: "text", text: text}) when is_binary(text), do: text
+  defp prompt_part_text(%{"type" => "image_url"}), do: "[Image attached]"
+  defp prompt_part_text(%{type: "image_url"}), do: "[Image attached]"
+  defp prompt_part_text(_part), do: ""
+
+  defp attachments_from_content(content) when is_list(content) do
+    content
+    |> Enum.with_index(1)
+    |> Enum.flat_map(fn {part, index} ->
+      case image_attachment_from_part(part, index) do
+        nil -> []
+        attachment -> [attachment]
+      end
+    end)
+  end
+
+  defp attachments_from_content(_content), do: []
+
+  defp image_attachment_from_part(%{"type" => "image_url", "image_url" => image_url}, index)
+       when is_map(image_url),
+       do: image_attachment_from_url(Map.get(image_url, "url"), index)
+
+  defp image_attachment_from_part(%{type: "image_url", image_url: image_url}, index)
+       when is_map(image_url),
+       do: image_attachment_from_url(Map.get(image_url, :url), index)
+
+  defp image_attachment_from_part(_part, _index), do: nil
+
+  defp image_attachment_from_url(url, index) when is_binary(url) do
+    case Regex.named_captures(~r/^data:(?<mime>[^;]+);base64,(?<data>.+)$/s, url) do
+      %{"mime" => mime_type, "data" => data} ->
+        %{
+          "type" => "blob",
+          "data" => data,
+          "mimeType" => mime_type,
+          "displayName" => "image-#{index}.#{mime_extension(mime_type)}"
+        }
+
+      _other ->
+        nil
+    end
+  end
+
+  defp image_attachment_from_url(_url, _index), do: nil
+
+  defp mime_extension("image/jpeg"), do: "jpeg"
+  defp mime_extension("image/png"), do: "png"
+  defp mime_extension("image/webp"), do: "webp"
+  defp mime_extension("image/gif"), do: "gif"
+  defp mime_extension(_mime_type), do: "bin"
+
+  defp message_role(message), do: Map.get(message, :role) || Map.get(message, "role")
+  defp message_content(message), do: Map.get(message, :content) || Map.get(message, "content")
+
+  defp empty_to_nil(value) when value in [nil, ""], do: nil
+  defp empty_to_nil(value), do: value
+
+  defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, _key, ""), do: map
+  defp maybe_put(map, key, value), do: Map.put(map, key, value)
 
   defp default_command_runner(%{command: [executable | args], input: input, env: env, cwd: cwd}) do
     with {:ok, port_spec, port_options} <- build_port_command(executable, args, env, cwd),
@@ -125,8 +263,7 @@ defmodule ElixirClaw.Providers.Copilot.NodeBridge do
     if is_nil(resolved) do
       {:error, :command_not_found}
     else
-      {:ok,
-       {:spawn_executable, resolved},
+      {:ok, {:spawn_executable, resolved},
        [
          :binary,
          :exit_status,
@@ -212,7 +349,9 @@ defmodule ElixirClaw.Providers.Copilot.NodeBridge do
 
   defp fetch_github_token(config) do
     case Keyword.get(config, :github_token) do
-      token when is_binary(token) and token != "" -> token
+      token when is_binary(token) and token != "" ->
+        token
+
       _ ->
         if Process.whereis(TokenManager) do
           case TokenManager.get_token() do

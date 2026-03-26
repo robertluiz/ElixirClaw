@@ -19,17 +19,20 @@ defmodule ElixirClaw.Agent.Loop do
 
   @type result :: {:ok, ProviderResponse.t()} | {:error, :not_found | :provider_error}
 
-  @spec process_message(String.t(), String.t()) :: result()
-  def process_message(session_id, user_message_text)
-      when is_binary(session_id) and is_binary(user_message_text) do
-    sanitized_user_message = ContextBuilder.sanitize_user_content(user_message_text)
+  @spec process_message(String.t(), String.t() | [map()]) :: result()
+  def process_message(session_id, user_message_content)
+      when is_binary(session_id) and
+             (is_list(user_message_content) or is_binary(user_message_content)) do
+    sanitized_user_message = ContextBuilder.sanitize_user_content(user_message_content)
+    persisted_user_message = ContextBuilder.extract_text(sanitized_user_message)
 
     with {:ok, %Session{} = session} <- Manager.get_session(session_id),
          execution_profile = execution_profile(session),
          {:ok, provider} <- resolve_provider(session, execution_profile),
          %Session{} = session_with_history <- load_session_history(session),
+         %Session{} = session_with_runtime_context <- attach_runtime_context(session_with_history),
          {messages, _metadata} <-
-           ContextBuilder.build_context(session_with_history, [],
+           ContextBuilder.build_context(session_with_runtime_context, [],
              system_prompt: Canary.system_prompt(session_id),
              user_message: sanitized_user_message
            ),
@@ -38,12 +41,13 @@ defmodule ElixirClaw.Agent.Loop do
              session: session,
              session_id: session_id,
              model: execution_profile.model,
+             provider_name: execution_profile.provider || session.provider,
              tool_registry: tool_registry(),
              max_iterations: max_iterations()
            ) do
       normalized_response = response |> normalize_final_response() |> protect_response(session_id)
 
-      persist_message!(session_id, "user", sanitized_user_message)
+      persist_message!(session_id, "user", persisted_user_message)
       persist_message!(session_id, "assistant", normalized_response.content)
       publish_outgoing_message(session_id, normalized_response.content)
 
@@ -53,7 +57,7 @@ defmodule ElixirClaw.Agent.Loop do
         error
 
       {:error, :provider_error} = error ->
-        persist_message!(session_id, "user", sanitized_user_message)
+        persist_message!(session_id, "user", persisted_user_message)
         publish_error_message(session_id)
         error
     end
@@ -69,7 +73,10 @@ defmodule ElixirClaw.Agent.Loop do
       "Attempting provider call for session #{opts[:session_id]} with provider=#{provider_name} model=#{inspect(model)}"
     )
 
-    case provider.chat(messages, provider_opts(opts[:model], tools)) do
+    case provider.chat(
+           messages,
+           provider_opts(opts[:provider_name], opts[:model], tools, opts[:session])
+         ) do
       {:ok, %ProviderResponse{} = response} ->
         token_usage = normalize_token_usage(response.token_usage)
         record_token_usage(opts[:session_id], token_usage)
@@ -119,6 +126,11 @@ defmodule ElixirClaw.Agent.Loop do
     history = Repo.list_session_messages(session.id) |> Enum.map(&to_context_message/1)
 
     %{session | messages: history}
+  end
+
+  defp attach_runtime_context(%Session{} = session) do
+    metadata = Map.put(session.metadata || %{}, "tool_registry", tool_registry())
+    %{session | metadata: metadata}
   end
 
   defp to_context_message(%MessageSchema{} = message) do
@@ -202,8 +214,78 @@ defmodule ElixirClaw.Agent.Loop do
     end
   end
 
-  defp provider_opts(model, []), do: [model: model]
-  defp provider_opts(model, tools), do: [model: model, tools: tools]
+  defp provider_opts(provider_name, model, tools, %Session{} = session) do
+    [model: model]
+    |> maybe_put_tools(tools)
+    |> maybe_put_reasoning(provider_name, model, session)
+  end
+
+  defp maybe_put_tools(opts, []), do: opts
+  defp maybe_put_tools(opts, tools), do: Keyword.put(opts, :tools, tools)
+
+  defp maybe_put_reasoning(opts, provider_name, model, %Session{} = session) do
+    if orchestrator_session?(session) do
+      reasoning_opts(provider_name, model)
+      |> Enum.reduce(opts, fn {key, value}, acc -> Keyword.put(acc, key, value) end)
+    else
+      opts
+    end
+  end
+
+  defp orchestrator_session?(%Session{metadata: metadata}) when is_map(metadata) do
+    not is_binary(Map.get(metadata, "active_task_agent"))
+  end
+
+  defp orchestrator_session?(_session), do: true
+
+  defp reasoning_opts(provider_name, model) do
+    provider = normalize_provider_name(provider_name)
+    normalized_model = normalize_model_name(model)
+
+    cond do
+      provider in ["anthropic"] and anthropic_reasoning_model?(normalized_model) ->
+        [thinking: %{"type" => "enabled", "budget_tokens" => 4_000}, max_tokens: 8_000]
+
+      provider == "openrouter" and openrouter_anthropic_reasoning_model?(normalized_model) ->
+        [thinking: %{"type" => "enabled", "budget_tokens" => 4_000}, max_tokens: 8_000]
+
+      provider in ["openai", "openrouter", "copilot_byok", "github_copilot", "copilot"] and
+          openai_reasoning_model?(normalized_model) ->
+        [reasoning_effort: "medium"]
+
+      true ->
+        []
+    end
+  end
+
+  defp normalize_provider_name(provider_name) when is_binary(provider_name),
+    do: provider_name |> String.trim() |> String.downcase()
+
+  defp normalize_provider_name(provider_name) when is_atom(provider_name),
+    do: provider_name |> Atom.to_string() |> String.downcase()
+
+  defp normalize_provider_name(_provider_name), do: ""
+
+  defp normalize_model_name(model) when is_binary(model),
+    do: model |> String.trim() |> String.downcase()
+
+  defp normalize_model_name(_model), do: ""
+
+  defp openai_reasoning_model?(""), do: false
+
+  defp openai_reasoning_model?(model) do
+    String.starts_with?(model, ["o1", "o3", "o4"]) or String.starts_with?(model, "gpt-5")
+  end
+
+  defp anthropic_reasoning_model?(""), do: false
+
+  defp anthropic_reasoning_model?(model) do
+    String.contains?(model, "claude-sonnet-4") or String.contains?(model, "claude-3-7")
+  end
+
+  defp openrouter_anthropic_reasoning_model?(model) do
+    String.starts_with?(model, "anthropic/") and anthropic_reasoning_model?(model)
+  end
 
   defp provider_name(_provider, %Session{provider: provider_name}, _model)
        when is_binary(provider_name) and provider_name != "",

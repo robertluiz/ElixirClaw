@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@github/copilot-sdk": "0.2.0"
+    "@github/copilot-sdk": "0.2.0",
+    "elixir-claw-cozo-bridge": "file:../.."
   }
 }

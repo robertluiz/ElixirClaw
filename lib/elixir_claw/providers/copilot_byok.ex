@@ -101,6 +101,7 @@ defmodule ElixirClaw.Providers.CopilotBYOK do
       "messages" => OpenAICompat.format_messages(messages)
     }
     |> maybe_put("tools", Keyword.get(opts, :tools))
+    |> maybe_put("reasoning_effort", Keyword.get(opts, :reasoning_effort))
   end
 
   defp validate_stream_response(%Req.Response{status: status, body: body})

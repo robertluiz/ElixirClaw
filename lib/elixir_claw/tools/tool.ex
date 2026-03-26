@@ -23,6 +23,9 @@ defmodule ElixirClaw.Tool do
   @doc "Optional risk tier used for tool exposure and authorization."
   @callback risk_tier() :: :standard | :privileged
 
+  @doc "Optional logical capability group shown to the orchestrator."
+  @callback group() :: String.t()
+
   @doc """
   Maximum allowed output size in bytes.
 
@@ -39,5 +42,5 @@ defmodule ElixirClaw.Tool do
   """
   @callback timeout_ms() :: non_neg_integer()
 
-  @optional_callbacks risk_tier: 0
+  @optional_callbacks risk_tier: 0, group: 0
 end

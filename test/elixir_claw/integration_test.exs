@@ -21,6 +21,16 @@ defmodule ElixirClaw.IntegrationTest do
 
   @moduletag :integration
 
+  defp assert_session_system_messages(messages, session_id) do
+    system_contents =
+      messages
+      |> Enum.filter(&(&1.role == "system"))
+      |> Enum.map(& &1.content)
+
+    assert Enum.any?(system_contents, &String.contains?(&1, Canary.token_for_session(session_id)))
+    assert Enum.any?(system_contents, &String.starts_with?(&1, "Runtime capability inventory:"))
+  end
+
   setup :set_mox_from_context
   setup :verify_on_exit!
 
@@ -92,13 +102,11 @@ defmodule ElixirClaw.IntegrationTest do
     allow(ElixirClaw.MockProvider, self(), cli_pid)
 
     expect(ElixirClaw.MockProvider, :chat, fn messages, opts ->
-      assert [
-               %{role: "system", content: system_prompt},
-               %{role: "user", content: user_content}
-             ] =
-               Enum.map(messages, &Map.take(&1, [:role, :content]))
+      assert_session_system_messages(messages, session_id)
 
-      assert system_prompt =~ Canary.token_for_session(session_id)
+      assert [%{role: "user", content: user_content}] =
+               Enum.filter(messages, &(&1.role == "user"))
+
       assert user_content == "<untrusted_user_input>hello world</untrusted_user_input>"
 
       assert Keyword.get(opts, :model) == "gpt-4o-mini"
@@ -142,14 +150,15 @@ defmodule ElixirClaw.IntegrationTest do
         0 ->
           Process.put(:tool_round_trip_call, 1)
 
+          assert_session_system_messages(messages, session_id)
+
           assert [
-                   %{role: "system", content: _system_prompt},
                    %{
                      role: "user",
                      content: "<untrusted_user_input>run tool</untrusted_user_input>"
                    }
                  ] =
-                   Enum.map(messages, &Map.take(&1, [:role, :content]))
+                   Enum.filter(messages, &(&1.role == "user"))
 
           assert Keyword.get(opts, :tools) == [
                    %{
@@ -176,8 +185,14 @@ defmodule ElixirClaw.IntegrationTest do
            }}
 
         1 ->
+          assert_session_system_messages(messages, session_id)
+
+          non_system_messages =
+            messages
+            |> Enum.reject(&(&1.role == "system"))
+            |> Enum.map(&Map.take(&1, [:role, :content, :tool_calls, :tool_call_id]))
+
           assert [
-                   %{role: "system", content: _system_prompt},
                    %{
                      role: "user",
                      content: "<untrusted_user_input>run tool</untrusted_user_input>"
@@ -188,11 +203,7 @@ defmodule ElixirClaw.IntegrationTest do
                      tool_call_id: "tool-1",
                      content: "<untrusted_tool_output>tool-result:otp</untrusted_tool_output>"
                    }
-                 ] =
-                   Enum.map(
-                     messages,
-                     &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id])
-                   )
+                 ] = non_system_messages
 
           {:ok,
            %ProviderResponse{
@@ -222,14 +233,15 @@ defmodule ElixirClaw.IntegrationTest do
         0 ->
           Process.put(:multi_turn_call, 1)
 
+          assert_session_system_messages(messages, session_id)
+
           assert [
-                   %{role: "system", content: _system_prompt},
                    %{
                      role: "user",
                      content: "<untrusted_user_input>first turn</untrusted_user_input>"
                    }
                  ] =
-                   Enum.map(messages, &Map.take(&1, [:role, :content]))
+                   Enum.filter(messages, &(&1.role == "user"))
 
           {:ok,
            %ProviderResponse{
@@ -252,7 +264,8 @@ defmodule ElixirClaw.IntegrationTest do
                    {"user", "<untrusted_user_input>second turn</untrusted_user_input>"}
                  )
 
-          assert length(messages) == 4
+          assert length(messages) == 5
+          assert_session_system_messages(messages, session_id)
 
           {:ok,
            %ProviderResponse{
@@ -382,14 +395,15 @@ defmodule ElixirClaw.IntegrationTest do
         0 ->
           Process.put(:mcp_round_trip_call, 1)
 
+          assert_session_system_messages(messages, session_id)
+
           assert [
-                   %{role: "system", content: _system_prompt},
                    %{
                      role: "user",
                      content: "<untrusted_user_input>call mcp</untrusted_user_input>"
                    }
                  ] =
-                   Enum.map(messages, &Map.take(&1, [:role, :content]))
+                   Enum.filter(messages, &(&1.role == "user"))
 
           assert Enum.any?(Keyword.get(opts, :tools, []), fn tool ->
                    get_in(tool, [:function, :name]) == "mcp:demo-http:echo"
@@ -409,8 +423,14 @@ defmodule ElixirClaw.IntegrationTest do
            }}
 
         1 ->
+          assert_session_system_messages(messages, session_id)
+
+          non_system_messages =
+            messages
+            |> Enum.reject(&(&1.role == "system"))
+            |> Enum.map(&Map.take(&1, [:role, :content, :tool_calls, :tool_call_id]))
+
           assert [
-                   %{role: "system", content: _system_prompt},
                    %{
                      role: "user",
                      content: "<untrusted_user_input>call mcp</untrusted_user_input>"
@@ -431,11 +451,7 @@ defmodule ElixirClaw.IntegrationTest do
                      tool_call_id: "mcp-call-1",
                      content: "<untrusted_tool_output>pong</untrusted_tool_output>"
                    }
-                 ] =
-                   Enum.map(
-                     messages,
-                     &Map.take(&1, [:role, :content, :tool_calls, :tool_call_id])
-                   )
+                 ] = non_system_messages
 
           {:ok,
            %ProviderResponse{
@@ -458,11 +474,10 @@ defmodule ElixirClaw.IntegrationTest do
     sanitized_input = ContextBuilder.sanitize_user_content(secret_input)
 
     expect(ElixirClaw.MockProvider, :chat, fn messages, _opts ->
-      assert [
-               %{role: "system", content: _system_prompt},
-               %{role: "user", content: wrapped_input}
-             ] =
-               Enum.map(messages, &Map.take(&1, [:role, :content]))
+      assert_session_system_messages(messages, session_id)
+
+      assert [%{role: "user", content: wrapped_input}] =
+               Enum.filter(messages, &(&1.role == "user"))
 
       assert wrapped_input ==
                "<untrusted_user_input>#{sanitized_input}</untrusted_user_input>"

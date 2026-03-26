@@ -89,6 +89,34 @@ defmodule ElixirClaw.Providers.CopilotBYOKTest do
             }} = CopilotBYOK.chat([%{role: "user", content: "Hello"}])
   end
 
+  test "chat/2 forwards reasoning_effort for GPT-5 style requests", %{bypass: bypass} do
+    expect_chat_request(bypass, fn conn, body ->
+      assert body["model"] == "gpt-5.4-mini"
+      assert body["reasoning_effort"] == "medium"
+
+      Plug.Conn.resp(
+        conn,
+        200,
+        Jason.encode!(%{
+          "model" => "gpt-5.4-mini",
+          "choices" => [
+            %{
+              "message" => %{"role" => "assistant", "content" => "BYOK reasoning"},
+              "finish_reason" => "stop"
+            }
+          ],
+          "usage" => %{"prompt_tokens" => 7, "completion_tokens" => 3, "total_tokens" => 10}
+        })
+      )
+    end)
+
+    assert {:ok, %ProviderResponse{content: "BYOK reasoning"}} =
+             CopilotBYOK.chat([%{role: "user", content: "Hello"}],
+               model: "gpt-5.4-mini",
+               reasoning_effort: "medium"
+             )
+  end
+
   test "stream/2 produces chunks and final token usage", %{bypass: bypass} do
     Bypass.expect_once(bypass, "POST", "/custom/v1/chat/completions", fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)

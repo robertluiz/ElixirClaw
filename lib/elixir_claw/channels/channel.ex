@@ -10,8 +10,24 @@ defmodule ElixirClaw.Channel do
   @doc "Start the channel as a linked GenServer."
   @callback start_link(config :: map()) :: GenServer.on_start()
 
+  @typedoc "Platform-agnostic outbound payload for channels."
+  @type outbound_payload ::
+          String.t()
+          | %{
+              required(:type) => :photo | :audio,
+              required(:url) => String.t(),
+              optional(:caption) => String.t(),
+              optional(:duration) => non_neg_integer(),
+              optional(:performer) => String.t(),
+              optional(:title) => String.t()
+            }
+
   @doc "Send a message to a user in the given session."
-  @callback send_message(channel_pid :: pid(), session_id :: String.t(), content :: String.t()) ::
+  @callback send_message(
+              channel_pid :: pid(),
+              session_id :: String.t(),
+              content :: outbound_payload()
+            ) ::
               :ok | {:error, term()}
 
   @doc "Parse a raw platform message into an ElixirClaw.Types.Message struct."

@@ -57,7 +57,8 @@ defmodule ElixirClaw.Channels.Supervisor do
       config = channel_config(channels_config, :telegram)
 
       if valid_telegram_config?(config) do
-        children ++ [channel_child_spec(ElixirClaw.Channels.Telegram, config)]
+        webhook_children = maybe_add_telegram_webhook_server(config)
+        children ++ webhook_children ++ [channel_child_spec(ElixirClaw.Channels.Telegram, config)]
       else
         Logger.warning(
           "Skipping Telegram channel startup because required runtime config is missing or invalid"
@@ -86,6 +87,24 @@ defmodule ElixirClaw.Channels.Supervisor do
 
   defp channel_child_spec(module, config) do
     Supervisor.child_spec({module, config}, id: module, restart: :transient)
+  end
+
+  defp maybe_add_telegram_webhook_server(config) do
+    webhook_enabled = fetch_value(config, :webhook_enabled) == true
+    webhook_url = fetch_value(config, :webhook_url)
+    webhook_port = fetch_value(config, :webhook_port)
+
+    if webhook_enabled and is_binary(webhook_url) and String.trim(webhook_url) != "" and
+         is_integer(webhook_port) do
+      [
+        Supervisor.child_spec(
+          {ElixirClaw.Channels.Telegram.WebhookServer, normalize_mapish(config) |> Map.to_list()},
+          id: ElixirClaw.Channels.Telegram.WebhookServer
+        )
+      ]
+    else
+      []
+    end
   end
 
   defp valid_telegram_config?(config) do

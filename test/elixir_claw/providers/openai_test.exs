@@ -75,6 +75,34 @@ defmodule ElixirClaw.Providers.OpenAITest do
             }} = OpenAI.chat([%{role: "user", content: "Hello"}], model: "gpt-4o")
   end
 
+  test "chat/2 forwards reasoning_effort for reasoning-capable requests", %{bypass: bypass} do
+    expect_chat_request(bypass, fn conn, body ->
+      assert body["model"] == "gpt-5.4-mini"
+      assert body["reasoning_effort"] == "medium"
+
+      Plug.Conn.resp(
+        conn,
+        200,
+        Jason.encode!(%{
+          "model" => "gpt-5.4-mini",
+          "choices" => [
+            %{
+              "message" => %{"role" => "assistant", "content" => "Thought through"},
+              "finish_reason" => "stop"
+            }
+          ],
+          "usage" => %{"prompt_tokens" => 7, "completion_tokens" => 4, "total_tokens" => 11}
+        })
+      )
+    end)
+
+    assert {:ok, %ProviderResponse{content: "Thought through"}} =
+             OpenAI.chat([%{role: "user", content: "Hello"}],
+               model: "gpt-5.4-mini",
+               reasoning_effort: "medium"
+             )
+  end
+
   test "chat/2 parses tool calls into ToolCall structs", %{bypass: bypass} do
     expect_chat_request(bypass, fn conn, _body ->
       Plug.Conn.resp(

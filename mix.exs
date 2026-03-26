@@ -47,6 +47,7 @@ defmodule ElixirClaw.MixProject do
       {:toml, "~> 0.7"},
       {:oauth2, "~> 2.1"},
       {:phoenix_pubsub, "~> 2.1"},
+      {:bandit, "~> 1.5"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:mox, "~> 1.1", only: :test},
       {:bypass, "~> 2.1", only: :test}

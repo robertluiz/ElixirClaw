@@ -48,6 +48,7 @@ defmodule ElixirClaw.Providers.AnthropicTest do
       assert Plug.Conn.get_req_header(conn, "anthropic-version") == ["2023-06-01"]
       assert body["model"] == "claude-3-5-sonnet"
       assert body["system"] == "Be helpful"
+      assert body["max_tokens"] == 4096
 
       assert body["messages"] == [
                %{"role" => "user", "content" => "What's the weather?"},
@@ -159,6 +160,53 @@ defmodule ElixirClaw.Providers.AnthropicTest do
     assert tool_call.id == "toolu_456"
     assert tool_call.name == "search_docs"
     assert tool_call.arguments == %{"query" => "req_llm"}
+  end
+
+  test "chat/2 forwards thinking config with max_tokens", %{bypass: bypass} do
+    expect_messages_request(bypass, fn conn, body ->
+      assert body["model"] == "claude-sonnet-4-20250514"
+      assert body["thinking"] == %{"type" => "enabled", "budget_tokens" => 4_000}
+      assert body["max_tokens"] == 8_000
+
+      Plug.Conn.resp(
+        conn,
+        200,
+        Jason.encode!(%{
+          "model" => "claude-sonnet-4-20250514",
+          "stop_reason" => "end_turn",
+          "content" => [%{"type" => "text", "text" => "Thoughtful reply"}],
+          "usage" => %{"input_tokens" => 9, "output_tokens" => 5}
+        })
+      )
+    end)
+
+    assert {:ok, %ProviderResponse{content: "Thoughtful reply"}} =
+             Anthropic.chat([%{role: "user", content: "Hello"}],
+               model: "claude-sonnet-4-20250514",
+               thinking: %{"type" => "enabled", "budget_tokens" => 4_000},
+               max_tokens: 8_000
+             )
+  end
+
+  test "chat/2 defaults max_tokens when none is provided", %{bypass: bypass} do
+    expect_messages_request(bypass, fn conn, body ->
+      assert body["model"] == "claude-3-5-sonnet"
+      assert body["max_tokens"] == 4096
+
+      Plug.Conn.resp(
+        conn,
+        200,
+        Jason.encode!(%{
+          "model" => "claude-3-5-sonnet",
+          "stop_reason" => "end_turn",
+          "content" => [%{"type" => "text", "text" => "Default max tokens"}],
+          "usage" => %{"input_tokens" => 4, "output_tokens" => 2}
+        })
+      )
+    end)
+
+    assert {:ok, %ProviderResponse{content: "Default max tokens"}} =
+             Anthropic.chat([%{role: "user", content: "Hello"}], model: "claude-3-5-sonnet")
   end
 
   test "chat/2 uses default anthropic-version header when config omits one", %{bypass: bypass} do

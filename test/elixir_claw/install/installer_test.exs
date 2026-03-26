@@ -6,6 +6,11 @@ defmodule ElixirClaw.Install.InstallerTest do
   test "plan/0 returns the bootstrap steps in execution order" do
     assert [
              %{id: :npm_install, kind: :system, args: ["install"]},
+             %{
+               id: :copilot_bridge_npm_install,
+               kind: :system,
+               args: ["install", "--prefix", "priv/copilot_bridge"]
+             },
              %{id: :cozo_rebuild, kind: :system, args: ["rebuild", "cozo-node"]},
              %{id: :mix_deps_get, kind: :mix, task: "deps.get"},
              %{id: :mix_compile, kind: :mix, task: "compile"}
@@ -126,7 +131,7 @@ defmodule ElixirClaw.Install.InstallerTest do
                  mix_runner: fn _task, _args -> :ok end
                )
 
-      assert File.read!(output_path) == "install \r\nrebuild cozo-node\r\n"
+      assert File.read!(output_path) == "install \r\ninstall --prefix\r\nrebuild cozo-node\r\n"
     else
       assert true
     end

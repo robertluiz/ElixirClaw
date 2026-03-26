@@ -74,6 +74,11 @@ defmodule ElixirClaw.MCP.ToolWrapper do
   @impl ElixirClaw.Tool
   def timeout_ms, do: @default_timeout_ms
 
+  @impl ElixirClaw.Tool
+  def group do
+    raise ArgumentError, "ToolWrapper.group/0 is unsupported; use group/1 with a wrapper struct"
+  end
+
   @spec name(t()) :: String.t()
   def name(%__MODULE__{server_name: server_name, name: tool_name}) do
     "mcp:" <> server_name <> ":" <> tool_name
@@ -84,6 +89,9 @@ defmodule ElixirClaw.MCP.ToolWrapper do
     do: description
 
   def description(%__MODULE__{}), do: ""
+
+  @spec group(t()) :: String.t()
+  def group(%__MODULE__{server_name: server_name}), do: "MCP: #{server_name}"
 
   @spec parameters_schema(t()) :: map()
   def parameters_schema(%__MODULE__{schema: schema}) when is_map(schema), do: schema

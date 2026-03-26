@@ -83,6 +83,34 @@ defmodule ElixirClaw.Providers.OpenRouterTest do
              )
   end
 
+  test "chat/2 forwards reasoning options for reasoning-capable models", %{bypass: bypass} do
+    expect_chat_request(bypass, fn conn, body ->
+      assert body["model"] == "openai/gpt-5.4-mini"
+      assert body["reasoning_effort"] == "medium"
+
+      Plug.Conn.resp(
+        conn,
+        200,
+        Jason.encode!(%{
+          "model" => "openai/gpt-5.4-mini",
+          "choices" => [
+            %{
+              "message" => %{"role" => "assistant", "content" => "Reasoned via router"},
+              "finish_reason" => "stop"
+            }
+          ],
+          "usage" => %{"prompt_tokens" => 8, "completion_tokens" => 4, "total_tokens" => 12}
+        })
+      )
+    end)
+
+    assert {:ok, %ProviderResponse{content: "Reasoned via router"}} =
+             OpenRouter.chat([%{role: "user", content: "Hello"}],
+               model: "openai/gpt-5.4-mini",
+               reasoning_effort: "medium"
+             )
+  end
+
   test "stream/2 returns chunks and includes usage on final event", %{bypass: bypass} do
     Bypass.expect_once(bypass, "POST", "/api/v1/chat/completions", fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)

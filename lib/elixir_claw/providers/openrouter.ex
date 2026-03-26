@@ -101,6 +101,9 @@ defmodule ElixirClaw.Providers.OpenRouter do
       "messages" => OpenAICompat.format_messages(messages)
     }
     |> maybe_put("tools", Keyword.get(opts, :tools))
+    |> maybe_put("reasoning_effort", Keyword.get(opts, :reasoning_effort))
+    |> maybe_put("thinking", Keyword.get(opts, :thinking))
+    |> maybe_put("max_tokens", Keyword.get(opts, :max_tokens))
     |> maybe_put("transforms", Keyword.get(config(), :transforms))
   end
 

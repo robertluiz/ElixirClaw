@@ -122,12 +122,22 @@ Compared with projects such as `nanobot`, the important operational rule here is
 enabled = true
 bot_token = "${TELEGRAM_BOT_TOKEN}"
 allowed_chat_ids = []
+webhook_enabled = false
+webhook_url = "https://example.com/telegram/webhook"
+webhook_secret_token = "${TELEGRAM_WEBHOOK_SECRET_TOKEN}"
+webhook_port = 4001
+webhook_max_connections = 40
+webhook_drop_pending_updates = false
 ```
 
 Notes:
 - `enabled = true` is required, otherwise the Telegram channel is not started.
 - `bot_token` can be inline or interpolated from `TELEGRAM_BOT_TOKEN`.
 - `allowed_chat_ids` is accepted by the runtime config shape, but the current Telegram channel implementation still routes based on private chat sessions rather than enforcing an allowlist.
+- `webhook_enabled = true` switches Telegram to webhook-first delivery.
+- `webhook_url` must be a public HTTPS URL accepted by Telegram.
+- `webhook_secret_token` is checked against `X-Telegram-Bot-Api-Secret-Token`.
+- when webhook setup is absent or fails, ElixirClaw falls back to long polling automatically.
 
 #### 3. Export the token before starting the app
 
@@ -152,6 +162,12 @@ set TELEGRAM_BOT_TOKEN=123456:ABCDEF...
 C:\ProgramData\chocolatey\lib\Elixir\tools\bin\mix.bat run --no-halt
 ```
 
+Optional for webhook mode:
+
+```bash
+export TELEGRAM_WEBHOOK_SECRET_TOKEN="replace-me"
+```
+
 #### 4. Start a private chat with your bot
 
 The current Telegram implementation only accepts **private chats**. Group chats are rejected by design.
@@ -171,11 +187,46 @@ Typical checks:
 - sending `/start` to the bot returns the welcome message
 - sending a normal text message creates a session for that chat and routes messages through the runtime
 
+#### Telegram transport modes
+
+ElixirClaw now prefers **webhooks** when Telegram webhook configuration is present.
+
+- **Webhook-first**: `webhook_enabled = true` plus a valid `webhook_url` and `webhook_port`
+- **Fallback polling**: automatic when webhook config is missing or `setWebhook` fails
+
+Operational notes for webhook mode:
+
+- Telegram requires a public **HTTPS** `webhook_url`
+- the embedded webhook server listens on `webhook_port`
+- put Bandit behind nginx/Caddy or a tunnel in development
+- if webhook registration fails, ElixirClaw deletes the webhook and resumes long polling
+
 #### How this differs from nanobot
 
 - `nanobot` has a dedicated Telegram onboarding flow and clearer operator docs out of the box
 - `nanobot` uses long polling, while ElixirClaw currently exposes a channel process that consumes Telegram updates through the Telegex integration path in this codebase
 - ElixirClaw now closes the biggest clarity gap by loading `config/config.toml` at runtime, so `enabled = true` plus `bot_token` in TOML actually affects startup
+
+#### Telegram media delivery tools
+
+Inspired by `nanobot`'s typed media dispatch, ElixirClaw now exposes built-in tools for outbound Telegram media in the active session:
+
+- `send_telegram_photo`
+- `send_telegram_audio`
+
+These tools are session-scoped and only succeed when the active session channel is `telegram`.
+
+Expected payloads:
+
+- `send_telegram_photo`: `url` and optional `caption`
+- `send_telegram_audio`: `url` and optional `caption`, `duration`, `performer`, `title`
+
+Operational notes:
+
+- the tools publish a typed `:outgoing_message` payload onto the current session topic
+- `ElixirClaw.Channels.Telegram` routes `type: :photo` to `send_photo` and `type: :audio` to `send_audio`
+- plain text delivery still uses the existing chunked `send_message` path
+- the current implementation is intentionally XP-small: media is sent from tools directly to Telegram transport, without changing provider response contracts
 
 ### GitHub Copilot Node bridge
 

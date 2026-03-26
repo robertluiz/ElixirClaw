@@ -69,8 +69,98 @@ defmodule ElixirClaw.Providers.Copilot.ClientTest do
   end
 
   test "chat/2 delegates to the node bridge and parses the provider response" do
-    assert {:ok, %ProviderResponse{content: "Hi from bridge", model: "gpt-4o-mini", finish_reason: "stop"}} =
+    assert {:ok,
+            %ProviderResponse{
+              content: "Hi from bridge",
+              model: "gpt-4o-mini",
+              finish_reason: "stop"
+            }} =
              Client.chat([%{role: "user", content: "Hello"}])
+  end
+
+  test "chat/2 serializes multimodal user content for the node bridge" do
+    parent = self()
+
+    Application.put_env(:elixir_claw, Client,
+      use_node_bridge: true,
+      models: ["gpt-4o-mini"],
+      command_runner: fn request ->
+        payload = Jason.decode!(request.input)
+        send(parent, {:copilot_bridge_payload, payload})
+
+        {:ok,
+         Jason.encode!(%{
+           "ok" => true,
+           "content" => "saw attachment",
+           "model" => "gpt-4o-mini",
+           "finish_reason" => "stop",
+           "tool_calls" => [],
+           "token_usage" => nil
+         })}
+      end
+    )
+
+    messages = [
+      %{role: "system", content: "Be helpful"},
+      %{
+        role: "user",
+        content: [
+          %{
+            type: "image_url",
+            image_url: %{url: "data:image/jpeg;base64,ZmFrZS1pbWFnZQ==", detail: "auto"}
+          },
+          %{type: "text", text: "O que é isso?"}
+        ]
+      }
+    ]
+
+    assert {:ok, %ProviderResponse{content: "saw attachment"}} = Client.chat(messages)
+
+    assert_receive {:copilot_bridge_payload, payload}
+    assert payload["systemPrompt"] == "Be helpful"
+    assert payload["prompt"] == "user: [Image attached]\nO que é isso?"
+
+    assert payload["attachments"] == [
+             %{
+               "type" => "blob",
+               "data" => "ZmFrZS1pbWFnZQ==",
+               "mimeType" => "image/jpeg",
+               "displayName" => "image-1.jpeg"
+             }
+           ]
+  end
+
+  test "chat/2 forwards reasoning effort to the node bridge payload" do
+    parent = self()
+
+    Application.put_env(:elixir_claw, Client,
+      use_node_bridge: true,
+      models: ["gpt-5.4-mini"],
+      command_runner: fn request ->
+        payload = Jason.decode!(request.input)
+        send(parent, {:copilot_bridge_payload, payload})
+
+        {:ok,
+         Jason.encode!(%{
+           "ok" => true,
+           "content" => "reasoned",
+           "model" => "gpt-5.4-mini",
+           "finish_reason" => "stop",
+           "tool_calls" => [],
+           "token_usage" => nil
+         })}
+      end
+    )
+
+    assert {:ok, %ProviderResponse{content: "reasoned"}} =
+             Client.chat([%{role: "user", content: "Hello"}],
+               model: "gpt-5.4-mini",
+               reasoning_effort: "medium"
+             )
+
+    assert_receive {:copilot_bridge_payload, payload}
+    assert payload["model"] == "gpt-5.4-mini"
+    assert payload["reasoningEffort"] == "medium"
   end
 
   test "missing token returns no_token before bridge invocation" do
@@ -89,8 +179,19 @@ defmodule ElixirClaw.Providers.Copilot.ClientTest do
         send(parent, {:copilot_model_attempt, payload["model"]})
 
         case payload["model"] do
-          "gpt-5.4-mini" -> {:ok, Jason.encode!(%{"ok" => false, "error" => "request_failed"})}
-          "gpt-4o-mini" -> {:ok, Jason.encode!(%{"ok" => true, "content" => "fallback worked", "model" => "gpt-4o-mini", "finish_reason" => "stop", "tool_calls" => [], "token_usage" => nil})}
+          "gpt-5.4-mini" ->
+            {:ok, Jason.encode!(%{"ok" => false, "error" => "request_failed"})}
+
+          "gpt-4o-mini" ->
+            {:ok,
+             Jason.encode!(%{
+               "ok" => true,
+               "content" => "fallback worked",
+               "model" => "gpt-4o-mini",
+               "finish_reason" => "stop",
+               "tool_calls" => [],
+               "token_usage" => nil
+             })}
         end
       end
     )
@@ -111,11 +212,22 @@ defmodule ElixirClaw.Providers.Copilot.ClientTest do
       command_runner: fn request ->
         payload = Jason.decode!(request.input)
         send(parent, {:bridge_token, payload["githubToken"]})
-        {:ok, Jason.encode!(%{"ok" => true, "content" => "ok", "model" => "gpt-4o-mini", "finish_reason" => "stop", "tool_calls" => [], "token_usage" => nil})}
+
+        {:ok,
+         Jason.encode!(%{
+           "ok" => true,
+           "content" => "ok",
+           "model" => "gpt-4o-mini",
+           "finish_reason" => "stop",
+           "tool_calls" => [],
+           "token_usage" => nil
+         })}
       end
     )
 
-    assert {:ok, %ProviderResponse{content: "ok"}} = Client.chat([%{role: "user", content: "Hello"}])
+    assert {:ok, %ProviderResponse{content: "ok"}} =
+             Client.chat([%{role: "user", content: "Hello"}])
+
     assert_receive {:bridge_token, "gho-copilot-token"}
   end
 
@@ -123,7 +235,9 @@ defmodule ElixirClaw.Providers.Copilot.ClientTest do
     Application.put_env(:elixir_claw, Client,
       use_node_bridge: true,
       models: ["gpt-4o-mini"],
-      command_runner: fn _request -> {:ok, Jason.encode!(%{"ok" => false, "error" => "unauthorized"})} end
+      command_runner: fn _request ->
+        {:ok, Jason.encode!(%{"ok" => false, "error" => "unauthorized"})}
+      end
     )
 
     assert Client.chat([%{role: "user", content: "Hello"}]) == {:error, :unauthorized}
@@ -137,17 +251,30 @@ defmodule ElixirClaw.Providers.Copilot.ClientTest do
         payload = Jason.decode!(request.input)
 
         case payload["model"] do
-          "gpt-5.4-mini" -> {:ok, Jason.encode!(%{"ok" => false, "error" => "request_failed"})}
-          _ -> {:ok, Jason.encode!(%{"ok" => true, "content" => "ok", "model" => "gpt-4o-mini", "finish_reason" => "stop", "tool_calls" => [], "token_usage" => nil})}
+          "gpt-5.4-mini" ->
+            {:ok, Jason.encode!(%{"ok" => false, "error" => "request_failed"})}
+
+          _ ->
+            {:ok,
+             Jason.encode!(%{
+               "ok" => true,
+               "content" => "ok",
+               "model" => "gpt-4o-mini",
+               "finish_reason" => "stop",
+               "tool_calls" => [],
+               "token_usage" => nil
+             })}
         end
       end
     )
 
     log =
       capture_log(fn ->
-        assert {:ok, %ProviderResponse{content: "ok"}} = Client.chat([%{role: "user", content: "Hello"}])
+        assert {:ok, %ProviderResponse{content: "ok"}} =
+                 Client.chat([%{role: "user", content: "Hello"}])
       end)
 
-    assert log =~ "Copilot request failed for model gpt-5.4-mini; retrying with fallback model gpt-4o-mini"
+    assert log =~
+             "Copilot request failed for model gpt-5.4-mini; retrying with fallback model gpt-4o-mini"
   end
 end

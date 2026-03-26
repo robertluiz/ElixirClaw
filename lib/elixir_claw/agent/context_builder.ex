@@ -4,6 +4,7 @@ defmodule ElixirClaw.Agent.ContextBuilder do
   """
 
   alias ElixirClaw.Agent.TaskAgent
+  alias ElixirClaw.Agent.CapabilityInventory
   alias ElixirClaw.Types.{Message, Session}
 
   @summary_marker "[Earlier conversation summarized]"
@@ -66,8 +67,32 @@ defmodule ElixirClaw.Agent.ContextBuilder do
      }}
   end
 
-  @spec estimate_tokens(String.t() | nil) :: pos_integer()
+  @media_token_baseline 85
+
+  @spec estimate_tokens(String.t() | [map()] | nil) :: pos_integer()
   def estimate_tokens(text) when is_binary(text), do: max(1, div(String.length(text), 4))
+
+  def estimate_tokens(content) when is_list(content) do
+    content
+    |> Enum.reduce(0, fn
+      %{"type" => "text", "text" => text}, total when is_binary(text) ->
+        total + estimate_tokens(text)
+
+      %{type: "text", text: text}, total when is_binary(text) ->
+        total + estimate_tokens(text)
+
+      %{"type" => "image_url"}, total ->
+        total + @media_token_baseline
+
+      %{type: "image_url"}, total ->
+        total + @media_token_baseline
+
+      _item, total ->
+        total
+    end)
+    |> max(1)
+  end
+
   def estimate_tokens(_text), do: 1
 
   @spec count_context_tokens([map() | Message.t()]) :: non_neg_integer()
@@ -75,7 +100,11 @@ defmodule ElixirClaw.Agent.ContextBuilder do
     Enum.reduce(messages, 0, fn message, total -> total + token_count_for(message) end)
   end
 
-  @spec sanitize_user_content(String.t() | any()) :: String.t()
+  @spec sanitize_user_content(String.t() | [map()] | any()) :: String.t() | [map()]
+  def sanitize_user_content(content) when is_list(content) do
+    Enum.map(content, &sanitize_content_part/1)
+  end
+
   def sanitize_user_content(content) do
     content
     |> to_string()
@@ -88,8 +117,24 @@ defmodule ElixirClaw.Agent.ContextBuilder do
     |> String.replace(@api_key_pattern, "[REDACTED]")
   end
 
-  @spec wrap_user_input(String.t() | any()) :: String.t()
+  @spec wrap_user_input(String.t() | [map()] | any()) :: String.t() | [map()]
+  def wrap_user_input(content) when is_list(content) do
+    Enum.map(content, &wrap_user_content_part/1)
+  end
+
   def wrap_user_input(content), do: wrap_untrusted_content("untrusted_user_input", content)
+
+  @spec extract_text(String.t() | [map()] | any()) :: String.t()
+  def extract_text(content) when is_binary(content), do: content
+
+  def extract_text(content) when is_list(content) do
+    content
+    |> Enum.map(&extract_content_part_text/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.join("\n")
+  end
+
+  def extract_text(content), do: content |> to_string() |> String.trim()
 
   @spec wrap_tool_output(String.t() | any()) :: String.t()
   def wrap_tool_output(content), do: wrap_untrusted_content("untrusted_tool_output", content)
@@ -107,6 +152,7 @@ defmodule ElixirClaw.Agent.ContextBuilder do
        ) do
     [
       maybe_system_prompt(system_prompt),
+      maybe_capability_inventory_message(session_or_messages),
       maybe_orchestrator_memory_message(session_or_messages),
       maybe_task_agent_message(session_or_messages, task_agent_token_budget),
       maybe_task_agent_skills_message(session_or_messages, task_agent_token_budget),
@@ -126,6 +172,13 @@ defmodule ElixirClaw.Agent.ContextBuilder do
   end
 
   defp maybe_orchestrator_memory_message(_session_or_messages), do: nil
+
+  defp maybe_capability_inventory_message(%Session{metadata: metadata}) when is_map(metadata) do
+    context = %{"metadata" => metadata}
+    build_message("system", CapabilityInventory.to_system_prompt(context))
+  end
+
+  defp maybe_capability_inventory_message(_session_or_messages), do: nil
 
   defp maybe_task_agent_message(%Session{metadata: metadata}, task_agent_token_budget)
        when is_map(metadata) do
@@ -183,6 +236,7 @@ defmodule ElixirClaw.Agent.ContextBuilder do
     end
   end
 
+  defp maybe_user_message(content) when is_list(content), do: [build_message("user", content)]
   defp maybe_user_message(""), do: [build_message("user", "")]
   defp maybe_user_message(content), do: [build_message("user", content)]
 
@@ -291,6 +345,34 @@ defmodule ElixirClaw.Agent.ContextBuilder do
 
     "<#{tag}>#{escaped_content}</#{tag}>"
   end
+
+  defp sanitize_content_part(%{"type" => "text", "text" => text} = part) when is_binary(text) do
+    %{part | "text" => sanitize_user_content(text)}
+  end
+
+  defp sanitize_content_part(%{type: "text", text: text} = part) when is_binary(text) do
+    %{part | text: sanitize_user_content(text)}
+  end
+
+  defp sanitize_content_part(part), do: part
+
+  defp wrap_user_content_part(%{"type" => "text", "text" => text} = part) when is_binary(text) do
+    %{part | "text" => wrap_untrusted_content("untrusted_user_input", text)}
+  end
+
+  defp wrap_user_content_part(%{type: "text", text: text} = part) when is_binary(text) do
+    %{part | text: wrap_untrusted_content("untrusted_user_input", text)}
+  end
+
+  defp wrap_user_content_part(part), do: part
+
+  defp extract_content_part_text(%{"type" => "text", "text" => text}) when is_binary(text),
+    do: text
+
+  defp extract_content_part_text(%{type: "text", text: text}) when is_binary(text), do: text
+  defp extract_content_part_text(%{"type" => "image_url"}), do: "[Media attached]"
+  defp extract_content_part_text(%{type: "image_url"}), do: "[Media attached]"
+  defp extract_content_part_text(_part), do: ""
 
   defp escape_xml(content) do
     content

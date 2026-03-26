@@ -39,10 +39,13 @@ defmodule ElixirClaw.ApplicationTest do
       assert modules == [
                ElixirClaw.Repo,
                Registry,
+               Registry,
+               DynamicSupervisor,
                DynamicSupervisor,
                Phoenix.PubSub.Supervisor,
                Task.Supervisor,
                ElixirClaw.Tools.Registry,
+               ElixirClaw.Tools.TerminalSessionManager,
                ElixirClaw.Agent.MemoryGraphIndexer,
                ElixirClaw.Providers.Codex.TokenManager,
                ElixirClaw.Providers.Copilot.TokenManager,
@@ -91,7 +94,9 @@ defmodule ElixirClaw.ApplicationTest do
 
     test "does not restart the CLI child when stdin fails with :arguments" do
       cli_name = :application_test_cli_arguments
-      supervisor_name = Module.concat(__MODULE__, "ChannelsSupervisor#{System.unique_integer([:positive])}")
+
+      supervisor_name =
+        Module.concat(__MODULE__, "ChannelsSupervisor#{System.unique_integer([:positive])}")
 
       Application.put_env(:elixir_claw, :channels, %{
         cli: %{name: cli_name, prompt?: false, reader_fun: fn _ -> {:error, :arguments} end}
@@ -103,7 +108,8 @@ defmodule ElixirClaw.ApplicationTest do
 
       log =
         capture_log(fn ->
-          assert {:ok, supervisor_pid} = start_supervised({ChannelsSupervisor, name: supervisor_name})
+          assert {:ok, supervisor_pid} =
+                   start_supervised({ChannelsSupervisor, name: supervisor_name})
 
           Process.sleep(50)
 

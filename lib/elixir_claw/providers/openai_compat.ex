@@ -110,5 +110,6 @@ defmodule ElixirClaw.Providers.OpenAICompat do
     do: Map.get(map, "total_tokens") || Map.get(map, :total_tokens) || default
 
   defp maybe_put(map, _key, nil), do: map
+  defp maybe_put(map, "content", value) when is_list(value), do: Map.put(map, "content", value)
   defp maybe_put(map, key, value), do: Map.put(map, key, value)
 end

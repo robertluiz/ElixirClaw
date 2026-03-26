@@ -28,6 +28,16 @@ defmodule ElixirClaw.Tools.RegistryTest do
       assert {:ok, MockToolAdapter} = Registry.get("mock_tool", :test_registry)
       assert {:error, :not_found} = Registry.get("missing", :test_registry)
     end
+
+    test "returns the logical group for registered tools" do
+      expect(ElixirClaw.MockTool, :name, fn -> "mock_tool" end)
+
+      assert :ok = Registry.register(:test_registry, MockToolAdapter)
+      assert {:ok, "Built-in"} = Registry.group_for("mock_tool", :test_registry)
+
+      assert :ok = Registry.register(:test_registry, ElixirClaw.Tools.RunTerminalCommand)
+      assert {:ok, "Terminal"} = Registry.group_for("run_terminal_command", :test_registry)
+    end
   end
 
   describe "execute/4" do
@@ -330,6 +340,20 @@ defmodule ElixirClaw.Tools.RegistryTest do
                  }
                }
              ]
+    end
+
+    test "hides Telegram media tools from non-telegram sessions" do
+      assert :ok = Registry.register(:test_registry, ElixirClaw.Tools.SendTelegramPhoto)
+      assert :ok = Registry.register(:test_registry, ElixirClaw.Tools.SendTelegramAudio)
+
+      assert Registry.to_provider_format(:test_registry, %{"channel" => "cli"}) == []
+
+      assert Enum.map(
+               Registry.to_provider_format(:test_registry, %{"channel" => "telegram"}),
+               fn tool ->
+                 tool.function.name
+               end
+             ) == ["send_telegram_audio", "send_telegram_photo"]
     end
   end
 end

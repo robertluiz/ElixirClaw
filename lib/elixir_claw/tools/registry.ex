@@ -36,6 +36,14 @@ defmodule ElixirClaw.Tools.Registry do
     GenServer.call(server, :list)
   end
 
+  def list_context_tools(context), do: list_context_tools(__MODULE__, context)
+
+  def list_context_tools(server, context) when is_atom(server) and is_map(context) do
+    server
+    |> list()
+    |> filter_tool_names_for_context(context)
+  end
+
   def get(name), do: get(name, __MODULE__)
 
   def get(name, server) when is_binary(name) and is_atom(server) do
@@ -87,8 +95,7 @@ defmodule ElixirClaw.Tools.Registry do
 
   def to_provider_format(server, context) when is_atom(server) and is_map(context) do
     server
-    |> list()
-    |> filter_tool_names_for_context(context)
+    |> list_context_tools(context)
     |> Enum.map(fn name -> {name, get(name, server)} end)
     |> Enum.map(fn {_name, {:ok, tool}} ->
       %{
@@ -103,11 +110,22 @@ defmodule ElixirClaw.Tools.Registry do
   end
 
   defp filter_tool_names_for_context(tool_names, context) do
-    case allowed_mcp_servers(context) do
-      :all -> tool_names
-      allowed_servers -> Enum.filter(tool_names, &tool_name_allowed?(&1, allowed_servers))
-    end
+    tool_names
+    |> Enum.filter(&channel_tool_allowed?(&1, context))
+    |> then(fn filtered_names ->
+      case allowed_mcp_servers(context) do
+        :all -> filtered_names
+        allowed_servers -> Enum.filter(filtered_names, &tool_name_allowed?(&1, allowed_servers))
+      end
+    end)
   end
+
+  defp channel_tool_allowed?("send_telegram_" <> _rest, context) do
+    channel = Map.get(context, "channel", Map.get(context, :channel))
+    channel == "telegram"
+  end
+
+  defp channel_tool_allowed?(_name, _context), do: true
 
   defp tool_name_allowed?("mcp:" <> rest, allowed_servers) do
     server_name = rest |> String.split(":", parts: 2) |> List.first()
@@ -206,6 +224,24 @@ defmodule ElixirClaw.Tools.Registry do
 
   defp parameters_schema(%ToolWrapper{} = tool), do: ToolWrapper.parameters_schema(tool)
   defp parameters_schema(tool_module), do: apply(tool_module, :parameters_schema, [])
+
+  def group_for(name), do: group_for(name, __MODULE__)
+
+  def group_for(name, server) when is_binary(name) and is_atom(server) do
+    with {:ok, tool} <- get(name, server) do
+      {:ok, tool_group(tool)}
+    end
+  end
+
+  defp tool_group(%ToolWrapper{} = tool), do: ToolWrapper.group(tool)
+
+  defp tool_group(tool_module) do
+    if function_exported?(tool_module, :group, 0) do
+      apply(tool_module, :group, [])
+    else
+      "Built-in"
+    end
+  end
 
   defp risk_tier(%ToolWrapper{} = _tool, name) when is_binary(name) do
     configured_risk_tier(name) || :standard

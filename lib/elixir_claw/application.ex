@@ -29,10 +29,13 @@ defmodule ElixirClaw.Application do
     [
       ElixirClaw.Repo,
       {Registry, keys: :unique, name: ElixirClaw.SessionRegistry},
+      {Registry, keys: :unique, name: ElixirClaw.TerminalSessionRegistry},
       {DynamicSupervisor, strategy: :one_for_one, name: ElixirClaw.SessionSupervisor},
+      {DynamicSupervisor, strategy: :one_for_one, name: ElixirClaw.TerminalSessionSupervisor},
       {Phoenix.PubSub, name: ElixirClaw.PubSub},
       {Task.Supervisor, name: ElixirClaw.ToolSupervisor},
       {ElixirClaw.Tools.Registry, name: ElixirClaw.Tools.Registry},
+      {ElixirClaw.Tools.TerminalSessionManager, name: ElixirClaw.Tools.TerminalSessionManager},
       ElixirClaw.Agent.MemoryGraphIndexer,
       ElixirClaw.Providers.Codex.TokenManager,
       ElixirClaw.Providers.Copilot.TokenManager,
@@ -50,7 +53,8 @@ defmodule ElixirClaw.Application do
           ElixirClaw.MockDiscordAgentLoop,
           ElixirClaw.MockHTTPClient,
           ElixirClaw.MockStdioClient,
-          ElixirClaw.MockTelegex
+          ElixirClaw.MockTelegex,
+          ElixirClaw.MockAudioTranscriber
         ] do
       _ = Code.ensure_loaded?(module)
     end
